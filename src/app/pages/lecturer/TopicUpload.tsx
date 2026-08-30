@@ -45,9 +45,9 @@ export function TopicUpload() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/lecturer/dashboard' }, { label: 'Upload Topic' }]} />
-      <h1 className="text-2xl font-bold text-gray-800">Upload Project Topic</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Upload Project Topic</h1>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Topic Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:border-[#312DC4]" placeholder="Enter topic title" />

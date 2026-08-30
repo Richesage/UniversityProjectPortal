@@ -21,11 +21,11 @@ export function LecturerDashboard() {
   const workloadPercent = Math.min(100, Math.round((activeProjects / 15) * 100));
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/lecturer/dashboard' }, { label: 'Lecturer Dashboard' }]} />
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Lecturer Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Lecturer Dashboard</h1>
         <p className="text-gray-500">Overview of your supervision tasks.</p>
       </div>
 
@@ -61,7 +61,7 @@ export function LecturerDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="col-span-1 md:col-span-2 bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800">Recent Student Submissions</h2>
             <button onClick={() => navigate('/lecturer/students')} className="text-sm text-[#312DC4] hover:underline">View All Students</button>
@@ -85,7 +85,7 @@ export function LecturerDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
             <div className="space-y-3">
               <button onClick={() => navigate('/lecturer/upload')} className="w-full py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0] flex items-center justify-center gap-2">
@@ -102,7 +102,7 @@ export function LecturerDashboard() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-800">Supervisor Workload</h2>
           <button onClick={() => navigate('/lecturer/workload')} className="text-sm text-[#312DC4] hover:underline">View Full Chart</button>

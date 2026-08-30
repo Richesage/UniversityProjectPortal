@@ -7,7 +7,7 @@ import { useAppData } from '../../context/AppDataContext';
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { topics, proposals, getStudentAssignment, getStudentSubmissions, getStudentMeetings, getUserNotifications } = useAppData();
+  const { topics, proposals, getStudentAssignment, getStudentSubmissions, getStudentMeetings, getUserNotifications, markNotificationRead } = useAppData();
 
   const assignment = user ? getStudentAssignment(user.id) : undefined;
   const submissions = user ? getStudentSubmissions(user.id) : [];
@@ -18,11 +18,11 @@ export function StudentDashboard() {
   const latestSubmission = submissions[submissions.length - 1];
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/student/dashboard' }, { label: 'Student Dashboard' }]} />
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Welcome, {user?.name?.split(' ')[0] ?? 'Student'}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Welcome, {user?.name?.split(' ')[0] ?? 'Student'}</h1>
         <p className="text-gray-500">Overview of your final year project.</p>
       </div>
 
@@ -138,17 +138,24 @@ export function StudentDashboard() {
             </button>
           </div>
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Notifications</h2>
-            <div className="space-y-3">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-4">Notifications</h2>
+            <div className="space-y-2 sm:space-y-3">
               {notifications.slice(0, 3).map((n) => (
-                <div key={n.id} className={`flex gap-2 p-2 rounded-md ${n.read ? 'bg-gray-50' : 'bg-[#EEEDFB]/40 border border-[#C5C3EC]'}`}>
+                <button
+                  key={n.id}
+                  onClick={() => {
+                    markNotificationRead(n.id);
+                    if (n.actionUrl) navigate(n.actionUrl);
+                  }}
+                  className={`w-full text-left flex gap-2 p-2 rounded-md transition-colors hover:bg-gray-50 ${n.read ? 'bg-gray-50' : 'bg-[#EEEDFB]/40 border border-[#C5C3EC]'}`}
+                >
                   <Bell className="w-4 h-4 text-[#312DC4] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-gray-900">{n.title}</p>
-                    <p className="text-xs text-gray-500">{n.message}</p>
+                    <p className="text-xs text-gray-500 line-clamp-2">{n.message}</p>
                   </div>
-                </div>
+                </button>
               ))}
               {notifications.length === 0 && <p className="text-sm text-gray-500">No notifications.</p>}
             </div>

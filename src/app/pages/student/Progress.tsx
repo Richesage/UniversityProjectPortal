@@ -15,18 +15,18 @@ export function Progress() {
   const pending = milestones.filter((m) => m.status === 'pending' || m.status === 'in_progress');
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/student/dashboard' }, { label: 'Progress Tracking' }]} />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">Project Progress</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Project Progress</h1>
         <button onClick={() => navigate('/student/dashboard')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
           Back to Dashboard
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center justify-center">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center justify-center">
           <h2 className="text-lg font-semibold text-gray-800 mb-6 w-full text-left">Overall Completion</h2>
           <div className="relative w-40 h-40 flex items-center justify-center bg-[#EEEDFB] rounded-full border-8 border-[#312DC4]">
             <div className="flex flex-col items-center">
@@ -39,7 +39,7 @@ export function Progress() {
           </p>
         </div>
 
-        <div className="md:col-span-2 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="md:col-span-2 bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Milestones</h2>
           <div className="space-y-4">
             {milestones.map((m) => (
@@ -69,7 +69,7 @@ export function Progress() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Timeline</h2>
           <div className="relative border-l border-[#C5C3EC] ml-3 space-y-4">
             {milestones.map((m) => (
@@ -83,7 +83,7 @@ export function Progress() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Completed Tasks</h2>
             {completed.length > 0 ? (
               completed.map((m) => (
@@ -97,7 +97,7 @@ export function Progress() {
             )}
           </div>
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Pending Tasks</h2>
             {pending.length > 0 ? (
               pending.map((m) => (

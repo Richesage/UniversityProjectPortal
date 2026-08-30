@@ -53,9 +53,9 @@ export function TopicSelection() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/student/dashboard' }, { label: 'Project Topics' }]} />
-      <h1 className="text-2xl font-bold text-gray-800">Project Topic Selection</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Project Topic Selection</h1>
 
       <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[200px]">
@@ -122,7 +122,7 @@ export function TopicSelection() {
         </table>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Propose Your Own Topic</h2>
         <div className="space-y-4 max-w-2xl">
           <div>

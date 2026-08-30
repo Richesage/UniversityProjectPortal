@@ -16,11 +16,11 @@ export function AdminDashboard() {
   const allocatedPercent = assignments.length > 0 ? Math.round(((assignments.length - unallocated) / assignments.length) * 100) : 0;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/admin/dashboard' }, { label: 'Admin Dashboard' }]} />
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Admin Dashboard</h1>
         <p className="text-gray-500">System overview and management.</p>
       </div>
 
@@ -45,7 +45,7 @@ export function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="col-span-1 md:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Supervisor Allocation Summary</h2>
               <button onClick={() => navigate('/admin/allocation')} className="text-sm text-[#312DC4] hover:underline">Manage</button>
@@ -62,7 +62,7 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Notifications Panel</h2>
             <div className="space-y-3">
               {notifications.map((n) => (
@@ -78,7 +78,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
           <div className="space-y-3">
             <button onClick={() => navigate('/admin/approval')} className="w-full py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0] flex items-center justify-center gap-2">

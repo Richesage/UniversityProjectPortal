@@ -19,11 +19,11 @@ export function Workload() {
   const availableCapacity = Math.max(0, 15 - totalAssigned);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/lecturer/dashboard' }, { label: 'Workload Tracking' }]} />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">Supervisor Workload</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Supervisor Workload</h1>
         <button onClick={() => navigate('/lecturer/dashboard')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
           Back
         </button>
@@ -49,7 +49,7 @@ export function Workload() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Workload Distribution</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -65,7 +65,7 @@ export function Workload() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Weekly Reviews</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

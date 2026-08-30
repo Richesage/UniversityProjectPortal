@@ -29,12 +29,12 @@ export function SupervisorAllocation() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/admin/dashboard' }, { label: 'Supervisor Allocation' }]} />
-      <h1 className="text-2xl font-bold text-gray-800">Allocate Supervisor</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Allocate Supervisor</h1>
 
       {unallocatedStudent && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-sm text-gray-500">Student Details</p>
             <p className="font-medium text-gray-900 text-lg">Student ({unallocatedStudent.studentId})</p>

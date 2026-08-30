@@ -43,9 +43,9 @@ export function TopicApproval() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <Breadcrumb items={[{ label: 'Home', href: '/admin/dashboard' }, { label: 'Topic Approval' }]} />
-      <h1 className="text-2xl font-bold text-gray-800">Review Student Proposal</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Review Student Proposal</h1>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-200">
           <div>
             <p className="text-sm text-gray-500 mb-1">Student Information</p>
