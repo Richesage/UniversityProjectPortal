@@ -73,6 +73,7 @@ export interface Notification {
   type: 'info' | 'warning' | 'success';
   read: boolean;
   createdAt: string;
+  actionUrl?: string;
 }
 
 export interface Supervisor {
@@ -193,6 +194,25 @@ export const INITIAL_SUBMISSIONS: Submission[] = [
     feedback: 'Good start, please revise section 2.1.',
     chapter: 2,
   },
+  {
+    id: 'sub-3',
+    studentId: 'stu-3',
+    title: 'Chapter 1: Introduction',
+    fileName: 'Chapter_1_Jane_Doe_1.pdf',
+    submittedAt: '2023-10-15',
+    status: 'reviewed',
+    feedback: 'Good progress on introduction.',
+    chapter: 1,
+  },
+  {
+    id: 'sub-4',
+    studentId: 'stu-4',
+    title: 'Chapter 2: Literature Review',
+    fileName: 'Chapter_2_Jane_Doe_2.pdf',
+    submittedAt: '2023-10-20',
+    status: 'pending_review',
+    chapter: 2,
+  },
 ];
 
 export const INITIAL_MILESTONES: Milestone[] = [
@@ -225,6 +245,7 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
     type: 'info',
     read: false,
     createdAt: '2023-10-23',
+    actionUrl: '/student/submissions',
   },
   {
     id: 'not-2',
@@ -234,6 +255,7 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
     type: 'warning',
     read: false,
     createdAt: '2023-10-23',
+    actionUrl: '/student/meetings',
   },
   {
     id: 'not-3',
@@ -243,6 +265,7 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
     type: 'warning',
     read: false,
     createdAt: '2023-10-22',
+    actionUrl: '/admin/approval',
   },
   {
     id: 'not-4',
@@ -252,6 +275,7 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
     type: 'info',
     read: false,
     createdAt: '2023-10-22',
+    actionUrl: '/admin/approval',
   },
 ];
 
