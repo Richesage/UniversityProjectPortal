@@ -5,9 +5,15 @@ interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
+  updateProfile: (updates: Partial<Pick<User, 'name' | 'department'>>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function persistUser(user: User | null) {
+  if (user) sessionStorage.setItem('upp_user', JSON.stringify(user));
+  else sessionStorage.removeItem('upp_user');
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -23,17 +29,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const { password: _, ...userData } = account;
     setUser(userData);
-    sessionStorage.setItem('upp_user', JSON.stringify(userData));
+    persistUser(userData);
     return { success: true };
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    sessionStorage.removeItem('upp_user');
+    persistUser(null);
+  }, []);
+
+  const updateProfile = useCallback((updates: Partial<Pick<User, 'name' | 'department'>>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updates };
+      persistUser(next);
+      return next;
+    });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -47,4 +62,8 @@ export function useAuth() {
 
 export function roleDashboardPath(role: Role): string {
   return `/${role}/dashboard`;
+}
+
+export function roleProfilePath(role: Role): string {
+  return `/${role}/profile`;
 }

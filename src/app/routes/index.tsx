@@ -17,6 +17,7 @@ import { AdminDashboard } from '../pages/admin/Dashboard';
 import { TopicApproval } from '../pages/admin/TopicApproval';
 import { SupervisorAllocation } from '../pages/admin/SupervisorAllocation';
 import { ReportGeneration } from '../pages/admin/ReportGeneration';
+import { ProfilePage } from '../pages/Profile';
 
 export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: 'submissions', element: <Submissions /> },
       { path: 'progress', element: <Progress /> },
       { path: 'meetings', element: <Meetings /> },
+      { path: 'profile', element: <ProfilePage role="student" /> },
     ],
   },
   {
@@ -42,6 +44,7 @@ export const router = createBrowserRouter([
       { path: 'upload', element: <TopicUpload /> },
       { path: 'students', element: <AssignedStudents /> },
       { path: 'workload', element: <Workload /> },
+      { path: 'profile', element: <ProfilePage role="lecturer" /> },
     ],
   },
   {
@@ -53,6 +56,7 @@ export const router = createBrowserRouter([
       { path: 'approval', element: <TopicApproval /> },
       { path: 'allocation', element: <SupervisorAllocation /> },
       { path: 'reports', element: <ReportGeneration /> },
+      { path: 'profile', element: <ProfilePage role="admin" /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
