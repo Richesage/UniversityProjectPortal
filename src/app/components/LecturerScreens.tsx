@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronRight, Users, BookOpen, Clock, FileText, Upload, Calendar, CheckSquare, Search, Edit } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronRight, Users, BookOpen, Clock, FileText, Upload, Calendar, CheckSquare, Search, Edit, Image, Video, Send, Paperclip, Phone, MoreVertical, X } from 'lucide-react';
 
 interface ScreenProps {
   onNavigate: (screen: string) => void;
@@ -86,8 +86,8 @@ export function LecturerDashboard({ onNavigate }: ScreenProps) {
               <button onClick={() => onNavigate('view-students')} className="w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
                 <Users className="w-4 h-4" /> View Assigned Students
               </button>
-              <button onClick={() => onNavigate('workload')} className="w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" /> View Workload Chart
+              <button onClick={() => onNavigate('messages')} className="w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                <FileText className="w-4 h-4" /> Message Students
               </button>
             </div>
           </div>
@@ -284,5 +284,263 @@ function BarChartIcon(props: React.SVGProps<SVGSVGElement>) {
       <line x1="12" y1="20" x2="12" y2="4"></line>
       <line x1="6" y1="20" x2="6" y2="14"></line>
     </svg>
+  );
+}
+
+// ─── Chat data ────────────────────────────────────────────────────────────────
+
+interface Message {
+  id: number;
+  sender: 'me' | 'other';
+  type: 'text' | 'image' | 'video';
+  content: string;
+  time: string;
+}
+
+interface Conversation {
+  id: number;
+  name: string;
+  initials: string;
+  regNo: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  thread: Message[];
+}
+
+const CONVERSATIONS: Conversation[] = [
+  {
+    id: 1, name: 'Jane Doe 1', initials: 'JD', regNo: 'REG2023001',
+    lastMessage: 'Thank you! I will revise and resend.', time: '9:35 AM', unread: 0,
+    thread: [
+      { id: 1, sender: 'other', type: 'text', content: 'Good morning Dr. Yusuf, I have uploaded Chapter 1 for your review.', time: '8:50 AM' },
+      { id: 2, sender: 'me', type: 'text', content: 'Received! I will go through it today and send feedback shortly.', time: '9:10 AM' },
+      { id: 3, sender: 'me', type: 'image', content: 'Chapter 1 Annotated Feedback', time: '9:15 AM' },
+      { id: 4, sender: 'other', type: 'text', content: 'Thank you! I will revise and resend.', time: '9:35 AM' },
+    ],
+  },
+  {
+    id: 2, name: 'Jane Doe 2', initials: 'JD', regNo: 'REG2023002',
+    lastMessage: 'Is this the correct format for Chapter 2?', time: 'Yesterday', unread: 2,
+    thread: [
+      { id: 1, sender: 'other', type: 'text', content: 'Dr. Yusuf, is this the correct format for Chapter 2?', time: 'Yesterday 4:00 PM' },
+      { id: 2, sender: 'other', type: 'image', content: 'Chapter 2 Draft Format', time: 'Yesterday 4:01 PM' },
+    ],
+  },
+  {
+    id: 3, name: 'Jane Doe 3', initials: 'JD', regNo: 'REG2023003',
+    lastMessage: 'Please watch the methodology video I sent.', time: 'Mon', unread: 0,
+    thread: [
+      { id: 1, sender: 'me', type: 'text', content: 'Hi Jane, please watch the methodology video I am sharing below.', time: 'Mon 10:00 AM' },
+      { id: 2, sender: 'me', type: 'video', content: 'Research Methodology Guide', time: 'Mon 10:01 AM' },
+      { id: 3, sender: 'other', type: 'text', content: 'Thank you, I will watch it!', time: 'Mon 11:20 AM' },
+    ],
+  },
+];
+
+// ─── Reusable ChatBubble ──────────────────────────────────────────────────────
+
+function ChatBubble({ msg }: { msg: Message }) {
+  const isMe = msg.sender === 'me';
+
+  if (msg.type === 'image') {
+    return (
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-[260px] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
+            <div className="w-60 h-36 bg-gray-100 flex flex-col items-center justify-center gap-2">
+              <Image className="w-8 h-8 text-gray-300" />
+              <span className="text-xs text-gray-400">{msg.content}</span>
+            </div>
+          </div>
+          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.type === 'video') {
+    return (
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-[260px] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+          <div className="rounded-xl overflow-hidden border border-gray-300">
+            <div className="w-60 h-36 bg-gray-800 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-white ml-1" />
+              </div>
+              <span className="text-xs text-white/70">{msg.content}</span>
+            </div>
+          </div>
+          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[70%] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+          isMe
+            ? 'bg-[#312DC4] text-white rounded-br-sm'
+            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+        }`}>
+          {msg.content}
+        </div>
+        <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lecturer Messaging Screen ────────────────────────────────────────────────
+
+export function LecturerMessaging({ onNavigate }: ScreenProps) {
+  const [activeId, setActiveId] = useState<number>(1);
+  const [inputText, setInputText] = useState('');
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+  const active = CONVERSATIONS.find((c) => c.id === activeId)!;
+
+  return (
+    <div className="max-w-5xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 10rem)' }}>
+      {/* Breadcrumb */}
+      <div className="flex items-center text-sm text-gray-500 mb-4 shrink-0">
+        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
+        <ChevronRight className="w-4 h-4 mx-2" />
+        <span className="text-gray-900">Messages</span>
+      </div>
+
+      <div className="flex flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+
+        {/* ── Conversation list ── */}
+        <aside className="w-72 border-r border-gray-200 flex flex-col shrink-0">
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Student Messages</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Search students..." className="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#312DC4]" />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+            {CONVERSATIONS.map((conv) => (
+              <button
+                key={conv.id}
+                onClick={() => { setActiveId(conv.id); setInputText(''); setShowAttachMenu(false); }}
+                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
+                  activeId === conv.id ? 'bg-[#EEEDFB]' : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                  activeId === conv.id ? 'bg-[#312DC4]' : 'bg-gray-200'
+                }`}>
+                  <span className={`text-xs font-bold ${activeId === conv.id ? 'text-white' : 'text-gray-600'}`}>{conv.initials}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline">
+                    <p className={`text-sm font-medium ${activeId === conv.id ? 'text-[#312DC4]' : 'text-gray-900'}`}>{conv.name}</p>
+                    <span className="text-xs text-gray-400 shrink-0 ml-1">{conv.time}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
+                  <p className="text-xs text-gray-400">{conv.regNo}</p>
+                </div>
+                {conv.unread > 0 && (
+                  <span className="shrink-0 mt-1 w-5 h-5 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center font-medium">
+                    {conv.unread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* ── Chat thread ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Chat header */}
+          <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#312DC4] rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{active.initials}</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{active.name}</p>
+                <p className="text-xs text-gray-400">{active.regNo} · Design of Allocation System</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Voice call">
+                <Phone className="w-4 h-4" />
+              </button>
+              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="More options">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 shrink-0">Today</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {active.thread.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
+            ))}
+          </div>
+
+          {/* Input bar */}
+          <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
+            {showAttachMenu && (
+              <div className="flex gap-3 mb-3 px-1">
+                <button
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                >
+                  <Image className="w-4 h-4" /> Share Image
+                </button>
+                <button
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                >
+                  <Video className="w-4 h-4" /> Share Video
+                </button>
+                <button onClick={() => setShowAttachMenu(false)} className="ml-auto p-1 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`p-2 rounded-full transition-colors ${showAttachMenu ? 'bg-[#EEEDFB] text-[#312DC4]' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                title="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder={`Message ${active.name}...`}
+                className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:bg-white border border-transparent focus:border-[#312DC4]"
+              />
+
+              <button
+                className={`p-2.5 rounded-full transition-colors ${inputText.trim() ? 'bg-[#312DC4] text-white hover:bg-[#2724b0]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                disabled={!inputText.trim()}
+                title="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

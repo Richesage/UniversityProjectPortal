@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronRight, FileText, Upload, Calendar, Clock, CheckCircle, Search, Filter, Play } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronRight, FileText, Upload, CheckCircle, Search, Filter, Image, Video, Send, Paperclip, Phone, MoreVertical, X } from 'lucide-react';
 
 interface ScreenProps {
   onNavigate: (screen: string) => void;
@@ -32,7 +32,7 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Assigned Supervisor</p>
-                <p className="font-medium text-gray-900">Dr. Placeholder Name</p>
+                <p className="font-medium text-gray-900">Dr. Amina Yusuf</p>
               </div>
             </div>
           </div>
@@ -68,17 +68,21 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
             </button>
           </div>
 
+          {/* Recent Messages card replaces Upcoming Meetings */}
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Upcoming Meetings</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Messages</h2>
             <div className="flex items-start gap-3 mb-4">
-              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">Review Meeting with Supervisor</p>
-                <p className="text-xs text-gray-500">Oct 24, 2023 - 10:00 AM</p>
+              <div className="w-8 h-8 bg-[#EEEDFB] rounded-full flex items-center justify-center shrink-0">
+                <span className="text-xs font-semibold text-[#312DC4]">AY</span>
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-sm">Dr. Amina Yusuf</p>
+                <p className="text-xs text-gray-500 truncate">Please review the attached feedback on Ch. 2...</p>
+                <p className="text-xs text-gray-400 mt-0.5">10 min ago</p>
               </div>
             </div>
-            <button onClick={() => onNavigate('meeting')} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md">
-              Schedule Meeting
+            <button onClick={() => onNavigate('messages')} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md">
+              Open Messages
             </button>
           </div>
         </div>
@@ -92,6 +96,9 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
           </button>
           <button onClick={() => onNavigate('submission')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
             Submit Chapter
+          </button>
+          <button onClick={() => onNavigate('messages')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+            Message Supervisor
           </button>
         </div>
       </div>
@@ -241,9 +248,6 @@ export function SubmissionAndFeedback({ onNavigate }: ScreenProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-[#EEEDFB] text-[#312DC4] text-xs rounded-full border border-[#C5C3EC]">Reviewed</span>
-                    <button className="text-gray-500 hover:text-gray-700 p-1">
-                      <Upload className="w-4 h-4 rotate-180" />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -353,57 +357,209 @@ export function ProgressTracking({ onNavigate }: ScreenProps) {
   );
 }
 
-export function MeetingSchedule({ onNavigate }: ScreenProps) {
+// ─── Shared chat message types ────────────────────────────────────────────────
+
+interface Message {
+  id: number;
+  sender: 'me' | 'other';
+  type: 'text' | 'image' | 'video';
+  content: string;
+  time: string;
+}
+
+const STUDENT_THREAD: Message[] = [
+  { id: 1, sender: 'other', type: 'text', content: 'Hello! I have reviewed your Chapter 1 draft. Overall it is good but there are a few areas to improve.', time: '9:10 AM' },
+  { id: 2, sender: 'other', type: 'image', content: 'Annotated feedback on Chapter 1', time: '9:11 AM' },
+  { id: 3, sender: 'me', type: 'text', content: 'Thank you Dr. Yusuf! I will review your annotations and revise accordingly. Should I send the updated version here?', time: '9:25 AM' },
+  { id: 4, sender: 'other', type: 'text', content: 'Yes, please upload it here when you are done. Also watch this short clip on research methodology — it should help with Chapter 2.', time: '9:27 AM' },
+  { id: 5, sender: 'other', type: 'video', content: 'Research Methodology Overview', time: '9:28 AM' },
+  { id: 6, sender: 'me', type: 'text', content: 'Great, I will watch it tonight. Thank you!', time: '9:35 AM' },
+];
+
+// ─── Reusable ChatBubble ──────────────────────────────────────────────────────
+
+function ChatBubble({ msg }: { msg: Message }) {
+  const isMe = msg.sender === 'me';
+
+  if (msg.type === 'image') {
+    return (
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-[260px] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
+            <div className="w-60 h-36 bg-gray-100 flex flex-col items-center justify-center gap-2">
+              <Image className="w-8 h-8 text-gray-300" />
+              <span className="text-xs text-gray-400">{msg.content}</span>
+            </div>
+          </div>
+          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.type === 'video') {
+    return (
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-[260px] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
+            <div className="w-60 h-36 bg-gray-800 flex flex-col items-center justify-center gap-2 relative">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-white ml-1" />
+              </div>
+              <span className="text-xs text-white/70">{msg.content}</span>
+            </div>
+          </div>
+          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[70%] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+          isMe
+            ? 'bg-[#312DC4] text-white rounded-br-sm'
+            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+        }`}>
+          {msg.content}
+        </div>
+        <span className="text-xs text-gray-400 px-1">{msg.time}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Student Messaging Screen ─────────────────────────────────────────────────
+
+export function StudentMessaging({ onNavigate }: ScreenProps) {
+  const [inputText, setInputText] = useState('');
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+  return (
+    <div className="max-w-5xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 10rem)' }}>
+      {/* Breadcrumb */}
+      <div className="flex items-center text-sm text-gray-500 mb-4 shrink-0">
         <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
         <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Meeting Schedule</span>
+        <span className="text-gray-900">Messages</span>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Meetings</h1>
-        <button className="px-4 py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0]">
-          Request Meeting
-        </button>
-      </div>
+      <div className="flex flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Calendar View (Placeholder)</h2>
-          <div className="aspect-video bg-[#EEEDFB]/30 border border-[#C5C3EC] rounded-md flex flex-col items-center justify-center">
-            <Calendar className="w-12 h-12 text-[#312DC4]/30 mb-2" />
-            <span className="text-gray-400 text-sm">Calendar Component Placeholder</span>
+        {/* ── Conversation sidebar ── */}
+        <aside className="w-72 border-r border-gray-200 flex flex-col shrink-0">
+          <div className="p-4 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Messages</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Search..." className="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#312DC4]" />
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Upcoming Meetings</h2>
-            <div className="space-y-4">
-              <div className="p-4 border border-[#C5C3EC] rounded-md bg-[#EEEDFB]/30">
-                <h3 className="font-medium text-sm text-gray-900 mb-2">Project Review Setup</h3>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-xs text-gray-600 gap-2">
-                    <Clock className="w-4 h-4 text-[#312DC4]" /> 10:00 AM - 10:30 AM
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600 gap-2">
-                    <Calendar className="w-4 h-4 text-[#312DC4]" /> Oct 24, 2023
-                  </div>
-                  <div className="flex items-center text-xs text-gray-600 gap-2">
-                    <Play className="w-4 h-4 text-[#312DC4]" /> Online (Teams)
-                  </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+            {/* Active conversation */}
+            <div className="flex items-start gap-3 px-4 py-3 bg-[#EEEDFB] cursor-pointer">
+              <div className="w-10 h-10 bg-[#312DC4] rounded-full flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-white">AY</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline">
+                  <p className="text-sm font-semibold text-[#312DC4]">Dr. Amina Yusuf</p>
+                  <span className="text-xs text-gray-400">9:28 AM</span>
                 </div>
-                <button className="w-full py-2 bg-[#312DC4] text-white rounded-md text-xs font-medium hover:bg-[#2724b0] flex items-center justify-center gap-2">
-                  <Play className="w-3 h-3 fill-current" /> Join Meeting
-                </button>
+                <p className="text-xs text-gray-500 truncate">Watch this clip on research methodology...</p>
               </div>
             </div>
+          </div>
+        </aside>
 
-            <button onClick={() => onNavigate('dashboard')} className="w-full mt-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-              Back to Dashboard
-            </button>
+        {/* ── Chat thread ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Chat header */}
+          <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#312DC4] rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-white">AY</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Dr. Amina Yusuf</p>
+                <p className="text-xs text-gray-400">Supervisor · Machine Learning & AI</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Voice call">
+                <Phone className="w-4 h-4" />
+              </button>
+              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="More options">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
+            {/* Date separator */}
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400 shrink-0">Today</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {STUDENT_THREAD.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
+            ))}
+          </div>
+
+          {/* Input bar */}
+          <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
+            {/* Attach menu */}
+            {showAttachMenu && (
+              <div className="flex gap-3 mb-3 px-1">
+                <button
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                >
+                  <Image className="w-4 h-4" /> Share Image
+                </button>
+                <button
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                >
+                  <Video className="w-4 h-4" /> Share Video
+                </button>
+                <button onClick={() => setShowAttachMenu(false)} className="ml-auto p-1 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`p-2 rounded-full transition-colors ${showAttachMenu ? 'bg-[#EEEDFB] text-[#312DC4]' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                title="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:bg-white border border-transparent focus:border-[#312DC4]"
+              />
+
+              <button
+                className={`p-2.5 rounded-full transition-colors ${inputText.trim() ? 'bg-[#312DC4] text-white hover:bg-[#2724b0]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                disabled={!inputText.trim()}
+                title="Send"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -8,11 +8,11 @@ import {
   LayoutDashboard,
   FileText,
   List,
-  Calendar,
   Users,
   BarChart,
   CheckSquare,
-  ClipboardList
+  ClipboardList,
+  MessageSquare
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -32,7 +32,7 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
           { id: 'topic-selection', label: 'Project Topics', icon: List },
           { id: 'submission', label: 'Submissions', icon: FileText },
           { id: 'progress', label: 'Progress Tracking', icon: BarChart },
-          { id: 'meeting', label: 'Meetings', icon: Calendar },
+          { id: 'messages', label: 'Messages', icon: MessageSquare },
         ];
       case 'lecturer':
         return [
@@ -40,6 +40,7 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
           { id: 'topic-upload', label: 'Upload Topics', icon: FileText },
           { id: 'view-students', label: 'My Students', icon: Users },
           { id: 'workload', label: 'Workload Tracking', icon: BarChart },
+          { id: 'messages', label: 'Messages', icon: MessageSquare },
         ];
       case 'admin':
         return [
