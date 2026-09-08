@@ -45,7 +45,6 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
       case 'admin':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'topic-approval', label: 'Topic Approval', icon: CheckSquare },
           { id: 'supervisor-allocation', label: 'Allocate Supervisors', icon: Users },
           { id: 'report-generation', label: 'Reports', icon: ClipboardList },
         ];
