@@ -1,544 +1,634 @@
-import React, { useState } from 'react';
-import { ChevronRight, Users, BookOpen, Clock, FileText, Upload, Calendar, CheckSquare, Search, Edit, Image, Video, Send, Paperclip, Phone, MoreVertical, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Users, FileText, Upload, BarChart2, MessageSquare,
+  CheckCircle, Clock, AlertCircle, Search, X,
+  ImageIcon, Video, Send, Paperclip, Plus,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { topicsApi, lecturerApi, messagesApi, submissionsApi } from '../../lib/api';
+import type { Topic, TopicFormData, StudentRecord, Conversation, Message, Submission } from '../../types';
 
-interface ScreenProps {
-  onNavigate: (screen: string) => void;
+interface ScreenProps { onNavigate: (screen: string) => void; }
+
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`bg-gray-200 animate-pulse rounded ${className}`} />;
 }
 
+function ChatBubble({ msg, isMine }: { msg: Message; isMine: boolean }) {
+  const time = new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return (
+    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3`}>
+      <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-2 shadow-sm ${
+        isMine ? 'bg-[#312DC4] text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'
+      }`}>
+        {msg.type === 'text' && <p className="text-sm leading-relaxed">{msg.content}</p>}
+        {msg.type === 'image' && (
+          <div className="space-y-1">
+            <div className="w-48 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+              <ImageIcon className={`w-8 h-8 ${isMine ? 'text-white/60' : 'text-gray-400'}`} />
+            </div>
+            <p className="text-xs opacity-80">{msg.content}</p>
+          </div>
+        )}
+        {msg.type === 'video' && (
+          <div className="space-y-1">
+            <div className="w-48 h-32 bg-gray-800 rounded-lg flex items-center justify-center">
+              <Video className="w-8 h-8 text-white/60" />
+            </div>
+            <p className={`text-xs ${isMine ? 'opacity-80' : 'text-gray-500'}`}>{msg.content}</p>
+          </div>
+        )}
+        <p className={`text-xs mt-1 ${isMine ? 'text-white/60 text-right' : 'text-gray-400'}`}>{time}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── LecturerDashboard ────────────────────────────────────────────────────────
 export function LecturerDashboard({ onNavigate }: ScreenProps) {
+  const { user } = useAuth();
+  const [stats, setStats] = useState({ assignedStudents: 0, activeProjects: 0, pendingReviews: 0, workloadPercent: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    lecturerApi.stats().then(setStats).finally(() => setLoading(false));
+  }, []);
+
+  const cards = [
+    { label: 'Assigned Students', value: stats.assignedStudents, icon: Users, color: 'text-[#312DC4]', bg: 'bg-[#EEEDFB]' },
+    { label: 'Active Projects',   value: stats.activeProjects,   icon: FileText, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Pending Reviews',   value: stats.pendingReviews,   icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  ];
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <span>Home</span>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Lecturer Dashboard</span>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800">Welcome, {user?.name ?? 'Lecturer'}</h2>
+        <p className="text-sm text-gray-500 mt-0.5">{user?.specialization ?? 'Faculty Member'}</p>
       </div>
 
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Lecturer Dashboard</h1>
-          <p className="text-gray-500">Overview of your supervision tasks.</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {cards.map((card) => (
+          <div key={card.label} className="bg-white rounded-lg border border-gray-200 p-5 flex items-center gap-4">
+            <div className={`w-11 h-11 ${card.bg} rounded-lg flex items-center justify-center shrink-0`}>
+              <card.icon className={`w-5 h-5 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{loading ? '—' : card.value}</p>
+              <p className="text-xs text-gray-500">{card.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-2 text-gray-500 mb-2">
-            <Users className="w-4 h-4 text-[#312DC4]" />
-            <span className="text-sm">Assigned Students</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-800">12</span>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-gray-700">Workload Capacity</h3>
+          <span className="text-lg font-bold text-[#312DC4]">{loading ? '—' : stats.workloadPercent}%</span>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-2 text-gray-500 mb-2">
-            <BookOpen className="w-4 h-4 text-[#312DC4]" />
-            <span className="text-sm">Active Projects</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-800">10</span>
+        <div className="w-full bg-gray-100 rounded-full h-3">
+          <div
+            className={`h-3 rounded-full transition-all duration-700 ${stats.workloadPercent >= 90 ? 'bg-red-500' : stats.workloadPercent >= 70 ? 'bg-amber-500' : 'bg-[#312DC4]'}`}
+            style={{ width: `${stats.workloadPercent}%` }}
+          />
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-2 text-gray-500 mb-2">
-            <CheckSquare className="w-4 h-4 text-[#312DC4]" />
-            <span className="text-sm">Pending Reviews</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-800">4</span>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-2 text-gray-500 mb-2">
-            <Clock className="w-4 h-4 text-[#312DC4]" />
-            <span className="text-sm">Workload</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-800">80%</span>
-        </div>
+        <p className="text-xs text-gray-400 mt-1">{stats.workloadPercent >= 90 ? 'Near capacity — contact admin to adjust limits.' : 'Within acceptable range.'}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Student Submissions</h2>
-            <button onClick={() => onNavigate('view-students')} className="text-sm text-[#312DC4] hover:underline">View All Students</button>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Upload Topic',   screen: 'topic-upload',  icon: Upload },
+            { label: 'My Students',    screen: 'view-students', icon: Users },
+            { label: 'Workload',       screen: 'workload',      icon: BarChart2 },
+            { label: 'Messages',       screen: 'messages',      icon: MessageSquare },
+          ].map((a) => (
+            <button
+              key={a.screen}
+              onClick={() => onNavigate(a.screen)}
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-[#C5C3EC] hover:bg-[#EEEDFB] transition-colors"
+            >
+              <a.icon className="w-5 h-5 text-[#312DC4]" />
+              <span className="text-xs font-medium text-gray-700 text-center">{a.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ProjectTopicUpload ───────────────────────────────────────────────────────
+export function ProjectTopicUpload({ onNavigate: _onNavigate }: ScreenProps) {
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [form, setForm] = useState<TopicFormData>({ title: '', description: '', department: '', researchArea: '', maxStudents: 5 });
+
+  const DEPARTMENTS = ['Computer Science', 'Software Engineering', 'Information Technology', 'Electrical Engineering', 'Computer Engineering'];
+  const RESEARCH_AREAS = ['Artificial Intelligence', 'Blockchain', 'Web Development', 'Internet of Things', 'Cybersecurity', 'Data Science', 'Mobile Computing'];
+
+  useEffect(() => {
+    topicsApi.myTopics().then(setTopics).finally(() => setLoading(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setSuccess(false);
+    try {
+      const newTopic = await topicsApi.create(form);
+      setTopics(prev => [newTopic, ...prev]);
+      setForm({ title: '', description: '', department: '', researchArea: '', maxStudents: 5 });
+      setSuccess(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const statusCls: Record<string, string> = {
+    available:        'bg-emerald-50 text-emerald-700',
+    pending_approval: 'bg-amber-50 text-amber-700',
+    approved:         'bg-blue-50 text-blue-700',
+    rejected:         'bg-red-50 text-red-700',
+    full:             'bg-gray-50 text-gray-600',
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">Upload Project Topics</h2>
+
+      {/* Form */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2"><Plus className="w-4 h-4 text-[#312DC4]" /> Add New Topic</h3>
+
+        {success && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+            <CheckCircle className="w-4 h-4 shrink-0" /> Topic submitted for approval.
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Topic Title</label>
+            <input type="text" required value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Enter topic title" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea required value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
+              rows={3} placeholder="Describe the project topic…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <select required value={form.department} onChange={(e) => setForm(f => ({ ...f, department: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+                <option value="">Select…</option>
+                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Research Area</label>
+              <select required value={form.researchArea} onChange={(e) => setForm(f => ({ ...f, researchArea: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+                <option value="">Select…</option>
+                {RESEARCH_AREAS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+              <input type="number" min={1} max={20} required value={form.maxStudents}
+                onChange={(e) => setForm(f => ({ ...f, maxStudents: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+            </div>
+          </div>
+          <button type="submit" disabled={submitting}
+            className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60">
+            {submitting ? 'Submitting…' : 'Submit Topic'}
+          </button>
+        </form>
+      </div>
+
+      {/* Topics list */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Your Topics</h3>
+        {loading ? (
+          <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+        ) : topics.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-6">No topics uploaded yet.</p>
+        ) : (
           <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#EEEDFB] rounded-full flex items-center justify-center text-xs font-medium text-[#312DC4]">ST{item}</div>
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">Student Name {item}</p>
-                    <p className="text-xs text-gray-500">Chapter {item} Uploaded</p>
-                  </div>
+            {topics.map((t) => (
+              <div key={t.id} className="border border-gray-100 rounded-lg p-4 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{t.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{t.department} · {t.researchArea} · {t.enrolledStudents}/{t.maxStudents} students</p>
                 </div>
-                <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-xs font-medium hover:bg-gray-50">
-                  Review
-                </button>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${statusCls[t.status] ?? 'bg-gray-50 text-gray-600'}`}>
+                  {t.status.replace('_', ' ')}
+                </span>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <button onClick={() => onNavigate('topic-upload')} className="w-full py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0] flex items-center justify-center gap-2">
-                <Upload className="w-4 h-4" /> Upload Project Topics
-              </button>
-              <button onClick={() => onNavigate('view-students')} className="w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
-                <Users className="w-4 h-4" /> View Assigned Students
-              </button>
-              <button onClick={() => onNavigate('messages')} className="w-full py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" /> Message Students
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
-export function ProjectTopicUpload({ onNavigate }: ScreenProps) {
+// ─── ViewAssignedStudents ─────────────────────────────────────────────────────
+export function ViewAssignedStudents({ onNavigate: _onNavigate }: ScreenProps) {
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [reviewing, setReviewing] = useState<{ sub: Submission; studentName: string } | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [savingFeedback, setSavingFeedback] = useState(false);
+
+  useEffect(() => {
+    const q = search.trim();
+    setLoading(true);
+    lecturerApi.students(q || undefined).then(setStudents).finally(() => setLoading(false));
+  }, [search]);
+
+  const statusBadge: Record<string, string> = {
+    pending_review: 'bg-amber-50 text-amber-700',
+    up_to_date:     'bg-emerald-50 text-emerald-700',
+    overdue:        'bg-red-50 text-red-700',
+  };
+
+  const handleSaveFeedback = async () => {
+    if (!reviewing || !feedback.trim()) return;
+    setSavingFeedback(true);
+    try {
+      await submissionsApi.review(reviewing.sub.id, feedback, 'reviewed');
+      setReviewing(null);
+      setFeedback('');
+    } finally {
+      setSavingFeedback(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Upload Topic</span>
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">My Students</h2>
 
-      <h1 className="text-2xl font-bold text-gray-800">Upload Project Topic</h1>
-
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Topic Title</label>
-          <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:border-[#312DC4]" placeholder="Enter topic title" />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea rows={5} className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:border-[#312DC4]" placeholder="Enter detailed description" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            <select className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none">
-              <option>Computer Science</option>
-              <option>Software Engineering</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Research Area</label>
-            <select className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none">
-              <option>Artificial Intelligence</option>
-              <option>Web Development</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Number of Students</label>
-          <input type="number" className="w-full md:w-1/3 border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none" defaultValue={1} min={1} />
-        </div>
-
-        <div className="pt-4 flex gap-3 border-t border-gray-200">
-          <button onClick={() => { alert('Uploaded successfully!'); onNavigate('dashboard'); }} className="px-4 py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0]">
-            Upload Topic
-          </button>
-          <button onClick={() => { alert('Draft Saved!'); onNavigate('dashboard'); }} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-            Save Draft
-          </button>
-          <button onClick={() => onNavigate('dashboard')} className="px-4 py-2 text-gray-600 rounded-md text-sm font-medium hover:underline">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ViewAssignedStudents({ onNavigate }: ScreenProps) {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Assigned Students</span>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Assigned Students</h1>
-        <div className="relative w-64">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search students..." className="w-full bg-white border border-gray-300 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-[#312DC4] focus:ring-1 focus:ring-[#312DC4]" />
+          <input
+            type="text"
+            placeholder="Search by name or reg. number…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+          />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-gray-700">Student</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Reg No</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Current Topic</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Progress</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Submission Status</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {[1, 2, 3, 4].map((item) => (
-              <tr key={item} className="hover:bg-gray-50">
-                <td className="px-4 py-4 font-medium text-gray-900">Jane Doe {item}</td>
-                <td className="px-4 py-4 text-gray-600">REG202300{item}</td>
-                <td className="px-4 py-4 text-gray-700 truncate max-w-[150px]">Design of Allocation System</td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#312DC4] rounded-full" style={{ width: `${item * 20}%` }}></div>
-                    </div>
-                    <span className="text-xs text-gray-500">{item * 20}%</span>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    item % 2 === 0
-                      ? 'bg-[#EEEDFB] text-[#312DC4] border border-[#C5C3EC]'
-                      : 'bg-gray-100 text-gray-600 border border-gray-200'
-                  }`}>
-                    {item % 2 === 0 ? 'Pending Review' : 'Up to date'}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button className="p-1.5 text-gray-500 hover:text-[#312DC4] hover:bg-[#EEEDFB] rounded" title="View Details">
-                      <FileText className="w-4 h-4" />
-                    </button>
-                    <button className="p-1.5 text-gray-500 hover:text-[#312DC4] hover:bg-[#EEEDFB] rounded" title="Give Feedback">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button className="p-1.5 text-gray-500 hover:text-[#312DC4] hover:bg-[#EEEDFB] rounded" title="Schedule Meeting">
-                      <Calendar className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Student</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Topic</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Progress</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Submission</th>
+                <th className="px-4 py-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-export function SupervisorWorkloadTracking({ onNavigate }: ScreenProps) {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Workload Tracking</span>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Supervisor Workload</h1>
-        <button onClick={() => onNavigate('dashboard')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-          Back
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-500 mb-1">Total Assigned</p>
-          <p className="text-2xl font-bold text-gray-800">12</p>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}><td colSpan={5} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td></tr>
+                ))
+                : students.map((s) => (
+                  <tr key={s.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-800">{s.name}</p>
+                      <p className="text-xs text-gray-400">{s.regNo} · {s.department}</p>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs">
+                      <p className="truncate">{s.currentTopic}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-100 rounded-full h-1.5">
+                          <div className="bg-[#312DC4] h-1.5 rounded-full" style={{ width: `${s.progress}%` }} />
+                        </div>
+                        <span className="text-xs text-gray-600">{s.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge[s.submissionStatus] ?? 'bg-gray-50 text-gray-600'}`}>
+                        {s.submissionStatus.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {s.submissionStatus === 'pending_review' && (
+                        <button
+                          onClick={() => {
+                            setReviewing({
+                              sub: { id: `sub-${s.id}`, projectId: '', studentId: s.id, chapterLabel: 'Latest Chapter', fileName: '', uploadedAt: new Date().toISOString(), status: 'pending_review' },
+                              studentName: s.name,
+                            });
+                            setFeedback('');
+                          }}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium text-white bg-[#312DC4] hover:bg-[#2724b0]"
+                        >
+                          Review
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
         </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-500 mb-1">Completed</p>
-          <p className="text-2xl font-bold text-gray-800">2</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-500 mb-1">Pending Reviews</p>
-          <p className="text-2xl font-bold text-gray-800">4</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-500 mb-1">Available Capacity</p>
-          <p className="text-2xl font-bold text-gray-800">3</p>
-        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-80 flex flex-col">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Workload Distribution Chart (Placeholder)</h2>
-        <div className="flex-1 bg-[#EEEDFB]/30 border border-dashed border-[#C5C3EC] rounded flex flex-col items-center justify-center text-gray-400">
-          <BarChartIcon className="w-12 h-12 mb-2 text-[#312DC4]/30" />
-          <p className="text-sm">Chart rendering area</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BarChartIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <line x1="18" y1="20" x2="18" y2="10"></line>
-      <line x1="12" y1="20" x2="12" y2="4"></line>
-      <line x1="6" y1="20" x2="6" y2="14"></line>
-    </svg>
-  );
-}
-
-// ─── Chat data ────────────────────────────────────────────────────────────────
-
-interface Message {
-  id: number;
-  sender: 'me' | 'other';
-  type: 'text' | 'image' | 'video';
-  content: string;
-  time: string;
-}
-
-interface Conversation {
-  id: number;
-  name: string;
-  initials: string;
-  regNo: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  thread: Message[];
-}
-
-const CONVERSATIONS: Conversation[] = [
-  {
-    id: 1, name: 'Jane Doe 1', initials: 'JD', regNo: 'REG2023001',
-    lastMessage: 'Thank you! I will revise and resend.', time: '9:35 AM', unread: 0,
-    thread: [
-      { id: 1, sender: 'other', type: 'text', content: 'Good morning Dr. Yusuf, I have uploaded Chapter 1 for your review.', time: '8:50 AM' },
-      { id: 2, sender: 'me', type: 'text', content: 'Received! I will go through it today and send feedback shortly.', time: '9:10 AM' },
-      { id: 3, sender: 'me', type: 'image', content: 'Chapter 1 Annotated Feedback', time: '9:15 AM' },
-      { id: 4, sender: 'other', type: 'text', content: 'Thank you! I will revise and resend.', time: '9:35 AM' },
-    ],
-  },
-  {
-    id: 2, name: 'Jane Doe 2', initials: 'JD', regNo: 'REG2023002',
-    lastMessage: 'Is this the correct format for Chapter 2?', time: 'Yesterday', unread: 2,
-    thread: [
-      { id: 1, sender: 'other', type: 'text', content: 'Dr. Yusuf, is this the correct format for Chapter 2?', time: 'Yesterday 4:00 PM' },
-      { id: 2, sender: 'other', type: 'image', content: 'Chapter 2 Draft Format', time: 'Yesterday 4:01 PM' },
-    ],
-  },
-  {
-    id: 3, name: 'Jane Doe 3', initials: 'JD', regNo: 'REG2023003',
-    lastMessage: 'Please watch the methodology video I sent.', time: 'Mon', unread: 0,
-    thread: [
-      { id: 1, sender: 'me', type: 'text', content: 'Hi Jane, please watch the methodology video I am sharing below.', time: 'Mon 10:00 AM' },
-      { id: 2, sender: 'me', type: 'video', content: 'Research Methodology Guide', time: 'Mon 10:01 AM' },
-      { id: 3, sender: 'other', type: 'text', content: 'Thank you, I will watch it!', time: 'Mon 11:20 AM' },
-    ],
-  },
-];
-
-// ─── Reusable ChatBubble ──────────────────────────────────────────────────────
-
-function ChatBubble({ msg }: { msg: Message }) {
-  const isMe = msg.sender === 'me';
-
-  if (msg.type === 'image') {
-    return (
-      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-        <div className={`max-w-[260px] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
-          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
-            <div className="w-60 h-36 bg-gray-100 flex flex-col items-center justify-center gap-2">
-              <Image className="w-8 h-8 text-gray-300" />
-              <span className="text-xs text-gray-400">{msg.content}</span>
+      {/* Feedback modal */}
+      {reviewing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">Review — {reviewing.studentName}</h3>
+              <button onClick={() => setReviewing(null)}><X className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
             </div>
-          </div>
-          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (msg.type === 'video') {
-    return (
-      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-        <div className={`max-w-[260px] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
-          <div className="rounded-xl overflow-hidden border border-gray-300">
-            <div className="w-60 h-36 bg-gray-800 flex flex-col items-center justify-center gap-2">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-white ml-1" />
-              </div>
-              <span className="text-xs text-white/70">{msg.content}</span>
-            </div>
-          </div>
-          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[70%] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
-        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-          isMe
-            ? 'bg-[#312DC4] text-white rounded-br-sm'
-            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-        }`}>
-          {msg.content}
-        </div>
-        <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Lecturer Messaging Screen ────────────────────────────────────────────────
-
-export function LecturerMessaging({ onNavigate }: ScreenProps) {
-  const [activeId, setActiveId] = useState<number>(1);
-  const [inputText, setInputText] = useState('');
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
-
-  const active = CONVERSATIONS.find((c) => c.id === activeId)!;
-
-  return (
-    <div className="max-w-5xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 10rem)' }}>
-      {/* Breadcrumb */}
-      <div className="flex items-center text-sm text-gray-500 mb-4 shrink-0">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Messages</span>
-      </div>
-
-      <div className="flex flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-
-        {/* ── Conversation list ── */}
-        <aside className="w-72 border-r border-gray-200 flex flex-col shrink-0">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Student Messages</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Search students..." className="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#312DC4]" />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-            {CONVERSATIONS.map((conv) => (
+            <textarea
+              rows={5}
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Enter your feedback for this submission…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none"
+            />
+            <div className="flex gap-3 mt-4">
               <button
-                key={conv.id}
-                onClick={() => { setActiveId(conv.id); setInputText(''); setShowAttachMenu(false); }}
-                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors ${
-                  activeId === conv.id ? 'bg-[#EEEDFB]' : 'hover:bg-gray-50'
-                }`}
+                onClick={handleSaveFeedback}
+                disabled={!feedback.trim() || savingFeedback}
+                className="flex-1 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60"
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  activeId === conv.id ? 'bg-[#312DC4]' : 'bg-gray-200'
-                }`}>
-                  <span className={`text-xs font-bold ${activeId === conv.id ? 'text-white' : 'text-gray-600'}`}>{conv.initials}</span>
+                {savingFeedback ? 'Saving…' : 'Submit Feedback'}
+              </button>
+              <button onClick={() => setReviewing(null)} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SupervisorWorkloadTracking ───────────────────────────────────────────────
+export function SupervisorWorkloadTracking({ onNavigate: _onNavigate }: ScreenProps) {
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [stats, setStats] = useState({ assignedStudents: 0, activeProjects: 0, pendingReviews: 0, workloadPercent: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([lecturerApi.students(), lecturerApi.stats()])
+      .then(([s, st]) => { setStudents(s); setStats(st); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">Workload Tracking</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-700 mb-4">Supervision Capacity</h3>
+          <div className="flex items-end gap-3 mb-3">
+            <span className="text-4xl font-bold text-[#312DC4]">{loading ? '—' : stats.workloadPercent}%</span>
+            <span className="text-sm text-gray-500 mb-1">utilised</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-4">
+            <div
+              className={`h-4 rounded-full transition-all duration-700 ${stats.workloadPercent >= 90 ? 'bg-red-500' : stats.workloadPercent >= 70 ? 'bg-amber-500' : 'bg-[#312DC4]'}`}
+              style={{ width: `${stats.workloadPercent}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-2">{stats.assignedStudents} of 15 maximum student slots filled.</p>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-700 mb-4">Summary</h3>
+          <dl className="space-y-3">
+            {[
+              { label: 'Assigned Students', value: stats.assignedStudents },
+              { label: 'Active Projects',   value: stats.activeProjects },
+              { label: 'Pending Reviews',   value: stats.pendingReviews },
+            ].map((row) => (
+              <div key={row.label} className="flex justify-between text-sm">
+                <dt className="text-gray-500">{row.label}</dt>
+                <dd className="font-semibold text-gray-800">{loading ? '—' : row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Student Progress Overview</h3>
+        {loading ? (
+          <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+        ) : (
+          <div className="space-y-3">
+            {students.map((s) => (
+              <div key={s.id} className="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0">
+                <div className="w-8 h-8 rounded-full bg-[#EEEDFB] flex items-center justify-center text-xs font-bold text-[#312DC4] shrink-0">
+                  {s.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline">
-                    <p className={`text-sm font-medium ${activeId === conv.id ? 'text-[#312DC4]' : 'text-gray-900'}`}>{conv.name}</p>
-                    <span className="text-xs text-gray-400 shrink-0 ml-1">{conv.time}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
-                  <p className="text-xs text-gray-400">{conv.regNo}</p>
+                  <p className="text-sm font-medium text-gray-800">{s.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{s.currentTopic}</p>
                 </div>
-                {conv.unread > 0 && (
-                  <span className="shrink-0 mt-1 w-5 h-5 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center font-medium">
-                    {conv.unread}
-                  </span>
-                )}
-              </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-24 bg-gray-100 rounded-full h-1.5">
+                    <div className="bg-[#312DC4] h-1.5 rounded-full" style={{ width: `${s.progress}%` }} />
+                  </div>
+                  <span className="text-xs text-gray-600 w-8 text-right">{s.progress}%</span>
+                </div>
+              </div>
             ))}
           </div>
-        </aside>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        {/* ── Chat thread ── */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Chat header */}
-          <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#312DC4] rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-white">{active.initials}</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">{active.name}</p>
-                <p className="text-xs text-gray-400">{active.regNo} · Design of Allocation System</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Voice call">
-                <Phone className="w-4 h-4" />
-              </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="More options">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
+// ─── LecturerMessaging ────────────────────────────────────────────────────────
+export function LecturerMessaging({ onNavigate: _onNavigate }: ScreenProps) {
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingConvs, setLoadingConvs] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesApi.conversations('lecturer').then((data) => {
+      setConversations(data);
+      if (data.length > 0) setActiveConvId(data[0].id);
+    }).finally(() => setLoadingConvs(false));
+  }, []);
+
+  useEffect(() => {
+    if (!activeConvId) return;
+    setLoadingMsgs(true);
+    messagesApi.thread(activeConvId, 'lecturer').then(setMessages).finally(() => setLoadingMsgs(false));
+  }, [activeConvId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const activeConv = conversations.find(c => c.id === activeConvId);
+
+  const sendText = async () => {
+    if (!text.trim() || !activeConvId || !user) return;
+    setSending(true);
+    try {
+      const msg = await messagesApi.send(activeConvId, user.id, user.name, text.trim());
+      setMessages(prev => [...prev, msg]);
+      setText('');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendMedia = async (file: File, type: 'image' | 'video') => {
+    if (!activeConvId || !user) return;
+    setSending(true);
+    setShowAttachMenu(false);
+    try {
+      const msg = await messagesApi.sendMedia(activeConvId, user.id, user.name, file, type);
+      setMessages(prev => [...prev, msg]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Messages</h2>
+
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex h-[calc(100vh-220px)] min-h-[480px]">
+        {/* Sidebar */}
+        <div className="w-72 border-r border-gray-200 flex flex-col shrink-0">
+          <div className="p-4 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-700">Student Conversations</p>
           </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
-            <div className="flex items-center gap-3 my-2">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 shrink-0">Today</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-
-            {active.thread.map((msg) => (
-              <ChatBubble key={msg.id} msg={msg} />
-            ))}
-          </div>
-
-          {/* Input bar */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
-            {showAttachMenu && (
-              <div className="flex gap-3 mb-3 px-1">
+          <div className="flex-1 overflow-y-auto">
+            {loadingConvs
+              ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="p-4"><Skeleton className="h-12 w-full" /></div>)
+              : conversations.map((conv) => (
                 <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                  key={conv.id}
+                  onClick={() => setActiveConvId(conv.id)}
+                  className={`w-full flex items-center gap-3 p-4 border-b border-gray-50 text-left hover:bg-gray-50 transition-colors ${activeConvId === conv.id ? 'bg-[#EEEDFB]' : ''}`}
                 >
-                  <Image className="w-4 h-4" /> Share Image
+                  <div className="w-9 h-9 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-[#312DC4] text-xs font-bold shrink-0">
+                    {conv.participantInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-800 truncate">{conv.participantName}</p>
+                      {conv.unreadCount > 0 && (
+                        <span className="ml-1 w-4 h-4 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center shrink-0">{conv.unreadCount}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{conv.participantSubtitle}</p>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{conv.lastMessage}</p>
+                  </div>
                 </button>
-                <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
-                >
-                  <Video className="w-4 h-4" /> Share Video
-                </button>
-                <button onClick={() => setShowAttachMenu(false)} className="ml-auto p-1 text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className={`p-2 rounded-full transition-colors ${showAttachMenu ? 'bg-[#EEEDFB] text-[#312DC4]' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
-                title="Attach file"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
-
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={`Message ${active.name}...`}
-                className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:bg-white border border-transparent focus:border-[#312DC4]"
-              />
-
-              <button
-                className={`p-2.5 rounded-full transition-colors ${inputText.trim() ? 'bg-[#312DC4] text-white hover:bg-[#2724b0]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                disabled={!inputText.trim()}
-                title="Send"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
+              ))
+            }
           </div>
+        </div>
+
+        {/* Thread */}
+        <div className="flex-1 flex flex-col">
+          {activeConv ? (
+            <>
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                <div className="w-8 h-8 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-[#312DC4] text-xs font-bold shrink-0">
+                  {activeConv.participantInitials}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{activeConv.participantName}</p>
+                  <p className="text-xs text-gray-400">{activeConv.projectInfo}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+                {loadingMsgs
+                  ? <div className="space-y-3"><Skeleton className="h-12 w-3/5" /><Skeleton className="h-10 w-2/5 ml-auto" /></div>
+                  : messages.map((msg) => <ChatBubble key={msg.id} msg={msg} isMine={msg.senderId === user?.id} />)
+                }
+                <div ref={bottomRef} />
+              </div>
+
+              <div className="px-4 py-3 border-t border-gray-100 bg-white">
+                <div className="flex items-end gap-2">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
+                      className="p-2 text-gray-400 hover:text-[#312DC4] hover:bg-[#EEEDFB] rounded-lg transition-colors"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    {showAttachMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 z-10">
+                        <button onClick={() => imageRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <ImageIcon className="w-4 h-4 text-[#312DC4]" /> Image
+                        </button>
+                        <button onClick={() => videoRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <Video className="w-4 h-4 text-[#312DC4]" /> Video
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) sendMedia(e.target.files[0], 'image'); }} />
+                  <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) sendMedia(e.target.files[0], 'video'); }} />
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
+                    rows={1}
+                    placeholder="Type a message…"
+                    className="flex-1 resize-none px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] bg-gray-50"
+                  />
+                  <button
+                    onClick={sendText}
+                    disabled={!text.trim() || sending}
+                    className="p-2 bg-[#312DC4] hover:bg-[#2724b0] text-white rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
+              Select a student conversation to start messaging.
+            </div>
+          )}
         </div>
       </div>
     </div>

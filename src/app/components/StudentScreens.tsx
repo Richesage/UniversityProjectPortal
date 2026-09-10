@@ -1,566 +1,733 @@
-import React, { useState } from 'react';
-import { ChevronRight, FileText, Upload, CheckCircle, Search, Filter, Image, Video, Send, Paperclip, Phone, MoreVertical, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  FileText, BarChart2, MessageSquare, Upload, CheckCircle,
+  Clock, AlertCircle, Send, Paperclip, ImageIcon, Video,
+  X, ChevronRight, Star,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { projectApi, topicsApi, submissionsApi, messagesApi } from '../../lib/api';
+import type { Project, Topic, Submission, Conversation, Message, TopicFilters } from '../../types';
 
-interface ScreenProps {
-  onNavigate: (screen: string) => void;
+interface ScreenProps { onNavigate: (screen: string) => void; }
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`bg-gray-200 animate-pulse rounded ${className}`} />;
 }
 
+// ─── ChatBubble ───────────────────────────────────────────────────────────────
+function ChatBubble({ msg, isMine }: { msg: Message; isMine: boolean }) {
+  const time = new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return (
+    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3`}>
+      <div className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-2 shadow-sm ${
+        isMine ? 'bg-[#312DC4] text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'
+      }`}>
+        {msg.type === 'text' && <p className="text-sm leading-relaxed">{msg.content}</p>}
+        {msg.type === 'image' && (
+          <div className="space-y-1">
+            <div className="w-48 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+              <ImageIcon className={`w-8 h-8 ${isMine ? 'text-white/60' : 'text-gray-400'}`} />
+            </div>
+            <p className="text-xs opacity-80">{msg.content}</p>
+          </div>
+        )}
+        {msg.type === 'video' && (
+          <div className="space-y-1">
+            <div className="w-48 h-32 bg-gray-800 rounded-lg flex items-center justify-center">
+              <Video className="w-8 h-8 text-white/60" />
+            </div>
+            <p className={`text-xs ${isMine ? 'opacity-80' : 'text-gray-500'}`}>{msg.content}</p>
+          </div>
+        )}
+        <p className={`text-xs mt-1 ${isMine ? 'text-white/60 text-right' : 'text-gray-400'}`}>{time}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── StudentDashboard ─────────────────────────────────────────────────────────
 export function StudentDashboard({ onNavigate }: ScreenProps) {
+  const { user } = useAuth();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    projectApi.current().then(setProject).finally(() => setLoading(false));
+  }, []);
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <span>Home</span>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Student Dashboard</span>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800">Welcome back, {user?.name?.split(' ')[0] ?? 'Student'}</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Here is an overview of your project progress.</p>
       </div>
 
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Welcome, Student</h1>
-          <p className="text-gray-500">Overview of your final year project.</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Overall Progress', value: loading ? '—' : `${project?.overallProgress ?? 0}%`, icon: BarChart2, color: 'text-[#312DC4]', bg: 'bg-[#EEEDFB]' },
+          { label: 'Submissions',      value: '2', icon: FileText,     color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Messages',         value: '2', icon: MessageSquare, color: 'text-amber-600',  bg: 'bg-amber-50' },
+        ].map((card) => (
+          <div key={card.label} className="bg-white rounded-lg border border-gray-200 p-5 flex items-center gap-4">
+            <div className={`w-11 h-11 ${card.bg} rounded-lg flex items-center justify-center shrink-0`}>
+              <card.icon className={`w-5 h-5 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{card.value}</p>
+              <p className="text-xs text-gray-500">{card.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-1 md:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Current Project</h2>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-500">Topic</p>
-                <p className="font-medium text-gray-900">Design of a Web-Based Project Allocation System</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Assigned Supervisor</p>
-                <p className="font-medium text-gray-900">Dr. Amina Yusuf</p>
-              </div>
-            </div>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Current Project</h3>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-2 w-full" />
           </div>
-
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Submission Status</h2>
-              <button onClick={() => onNavigate('submission')} className="text-sm text-[#312DC4] hover:underline">View All</button>
+        ) : project ? (
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium text-gray-800">{project.topicTitle}</p>
+              <p className="text-sm text-gray-500">Supervisor: {project.supervisorName}</p>
             </div>
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md bg-gray-50">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="font-medium text-sm">Chapter 2: Literature Review</p>
-                  <p className="text-xs text-gray-500">Submitted 2 days ago</p>
-                </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-500">Progress</span>
+                <span className="font-medium text-[#312DC4]">{project.overallProgress}%</span>
               </div>
-              <span className="px-2 py-1 bg-[#EEEDFB] text-[#312DC4] text-xs rounded-full border border-[#C5C3EC]">Pending Review</span>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="bg-[#312DC4] h-2 rounded-full transition-all duration-500" style={{ width: `${project.overallProgress}%` }} />
+              </div>
             </div>
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <CheckCircle className="w-3 h-3" /> {project.supervisorApprovalStatus}
+            </span>
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Overall Progress</h2>
-            <div className="flex items-center justify-center">
-              <div className="relative w-32 h-32 flex items-center justify-center bg-[#EEEDFB] rounded-full border-4 border-[#312DC4]">
-                <span className="text-2xl font-bold text-[#312DC4]">45%</span>
-              </div>
-            </div>
-            <button onClick={() => onNavigate('progress')} className="w-full mt-6 py-2 bg-[#EEEDFB] hover:bg-[#E3E2F7] text-[#312DC4] text-sm font-medium rounded-md">
-              View Detailed Progress
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-gray-500 text-sm">No active project yet.</p>
+            <button onClick={() => onNavigate('topic-selection')} className="mt-3 text-sm text-[#312DC4] hover:underline">
+              Browse available topics
             </button>
           </div>
-
-          {/* Recent Messages card replaces Upcoming Meetings */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Messages</h2>
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-8 h-8 bg-[#EEEDFB] rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-semibold text-[#312DC4]">AY</span>
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-sm">Dr. Amina Yusuf</p>
-                <p className="text-xs text-gray-500 truncate">Please review the attached feedback on Ch. 2...</p>
-                <p className="text-xs text-gray-400 mt-0.5">10 min ago</p>
-              </div>
-            </div>
-            <button onClick={() => onNavigate('messages')} className="w-full py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md">
-              Open Messages
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <button onClick={() => onNavigate('topic-selection')} className="px-4 py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0]">
-            Browse Project Topics
-          </button>
-          <button onClick={() => onNavigate('submission')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-            Submit Chapter
-          </button>
-          <button onClick={() => onNavigate('messages')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-            Message Supervisor
-          </button>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { label: 'Submit Chapter',   screen: 'submission',      icon: Upload },
+            { label: 'View Progress',    screen: 'progress',        icon: BarChart2 },
+            { label: 'Browse Topics',    screen: 'topic-selection', icon: Star },
+            { label: 'Messages',         screen: 'messages',        icon: MessageSquare },
+          ].map((a) => (
+            <button
+              key={a.screen}
+              onClick={() => onNavigate(a.screen)}
+              className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-[#C5C3EC] hover:bg-[#EEEDFB] transition-colors text-left"
+            >
+              <a.icon className="w-4 h-4 text-[#312DC4]" />
+              <span className="text-sm font-medium text-gray-700">{a.label}</span>
+              <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
+            </button>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-export function ProjectTopicSelection({ onNavigate }: ScreenProps) {
+// ─── ProjectTopicSelection ────────────────────────────────────────────────────
+export function ProjectTopicSelection({ onNavigate: _onNavigate }: ScreenProps) {
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<TopicFilters>({ search: '', department: '', researchArea: '' });
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [selecting, setSelecting] = useState(false);
+
+  const [proposalTitle, setProposalTitle] = useState('');
+  const [proposalDesc, setProposalDesc] = useState('');
+  const [proposalFile, setProposalFile] = useState<File | null>(null);
+  const [submittingProposal, setSubmittingProposal] = useState(false);
+  const [proposalSuccess, setProposalSuccess] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const fetchTopics = useCallback(() => {
+    setLoading(true);
+    topicsApi.list(filters).then(setTopics).finally(() => setLoading(false));
+  }, [filters]);
+
+  useEffect(() => { fetchTopics(); }, [fetchTopics]);
+
+  const handleSelect = async (topic: Topic) => {
+    setSelecting(true);
+    try {
+      await topicsApi.select(topic.id);
+      setSelectedTopic(topic);
+    } finally {
+      setSelecting(false);
+    }
+  };
+
+  const handlePropose = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingProposal(true);
+    try {
+      await topicsApi.propose({ title: proposalTitle, description: proposalDesc, file: proposalFile });
+      setProposalSuccess(true);
+      setProposalTitle(''); setProposalDesc(''); setProposalFile(null);
+    } finally {
+      setSubmittingProposal(false);
+    }
+  };
+
+  const departments = [...new Set(topics.map(t => t.department))];
+  const researchAreas = [...new Set(topics.map(t => t.researchArea))];
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Project Topics</span>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">Project Topics</h2>
+
+      {selectedTopic && (
+        <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-emerald-800">Topic selected successfully!</p>
+            <p className="text-sm text-emerald-700 mt-0.5">"{selectedTopic.title}" has been registered.</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <input
+            type="text"
+            placeholder="Search topics or lecturers…"
+            value={filters.search}
+            onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+          />
+          <select
+            value={filters.department}
+            onChange={(e) => setFilters(f => ({ ...f, department: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none"
+          >
+            <option value="">All Departments</option>
+            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select
+            value={filters.researchArea}
+            onChange={(e) => setFilters(f => ({ ...f, researchArea: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none"
+          >
+            <option value="">All Research Areas</option>
+            {researchAreas.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-800">Project Topic Selection</h1>
-
-      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search topics..." className="w-full bg-gray-50 border border-gray-300 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-[#312DC4] focus:ring-1 focus:ring-[#312DC4]" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select className="border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none">
-            <option>All Departments</option>
-          </select>
-          <select className="border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none">
-            <option>All Research Areas</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-gray-700">Title & Description</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Lecturer</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Area of Specialization</th>
-              <th className="px-4 py-3 font-medium text-gray-700">Slots</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {[
-              { id: 1, title: 'Topic Title Placeholder 1', lecturer: 'Dr. Amina Yusuf', specialization: 'Machine Learning & AI', slots: '2 / 5' },
-              { id: 2, title: 'Topic Title Placeholder 2', lecturer: 'Dr. Chukwu Eze', specialization: 'Cybersecurity & Networks', slots: '3 / 5' },
-              { id: 3, title: 'Topic Title Placeholder 3', lecturer: 'Dr. Fatima Bello', specialization: 'Software Engineering', slots: '1 / 5' },
-            ].map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4">
-                  <p className="font-medium text-gray-900">{item.title}</p>
-                  <p className="text-gray-500 mt-1 line-clamp-2">Brief description of the project topic placeholder text to simulate content layout.</p>
-                </td>
-                <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{item.lecturer}</td>
-                <td className="px-4 py-4">
-                  <span className="inline-block px-2 py-1 text-xs bg-[#EEEDFB] text-[#312DC4] rounded-full border border-[#C5C3EC] whitespace-nowrap">{item.specialization}</span>
-                </td>
-                <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{item.slots}</td>
-                <td className="px-4 py-4 text-right">
-                  <button onClick={() => { alert('Topic Selected!'); onNavigate('dashboard'); }} className="px-3 py-1.5 bg-[#312DC4] text-white rounded-md text-sm hover:bg-[#2724b0]">
-                    Select
-                  </button>
-                </td>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Topic Title</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Lecturer</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Area of Specialization</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Slots</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="px-4 py-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}><td colSpan={6} className="px-4 py-3"><Skeleton className="h-4 w-full" /></td></tr>
+                ))
+                : topics.map((topic) => (
+                  <tr key={topic.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-800 max-w-xs">
+                      <p className="truncate">{topic.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{topic.department}</p>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{topic.lecturerName}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block text-xs font-medium text-[#312DC4] bg-[#EEEDFB] border border-[#C5C3EC] rounded-full px-2 py-0.5">
+                        {topic.specialization}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{topic.enrolledStudents}/{topic.maxStudents}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        topic.status === 'available' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                      }`}>
+                        {topic.status === 'available' ? 'Available' : 'Full'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        disabled={topic.status !== 'available' || selecting}
+                        onClick={() => handleSelect(topic)}
+                        className="px-3 py-1.5 rounded-md text-xs font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-40"
+                      >
+                        Select
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Propose Your Own Topic</h2>
-        <div className="space-y-4 max-w-2xl">
+      {/* Propose own topic */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Propose Your Own Topic</h3>
+
+        {proposalSuccess && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+            <CheckCircle className="w-4 h-4 shrink-0" /> Proposal submitted! Your supervisor will review it shortly.
+          </div>
+        )}
+
+        <form onSubmit={handlePropose} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic Title</label>
-            <input type="text" className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:border-[#312DC4]" placeholder="Enter your proposed topic" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Proposed Title</label>
+            <input
+              type="text"
+              required
+              value={proposalTitle}
+              onChange={(e) => setProposalTitle(e.target.value)}
+              placeholder="Enter your proposed topic title"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea rows={4} className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:border-[#312DC4]" placeholder="Explain your proposal..." />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Brief Description</label>
+            <textarea
+              required
+              value={proposalDesc}
+              onChange={(e) => setProposalDesc(e.target.value)}
+              rows={3}
+              placeholder="Describe your project idea…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Proposal (PDF)</label>
-            <div className="border-2 border-dashed border-[#C5C3EC] rounded-md p-6 flex flex-col items-center justify-center bg-[#EEEDFB]/30">
-              <Upload className="w-6 h-6 text-[#312DC4] mb-2" />
-              <p className="text-sm text-gray-500">Click to browse or drag and drop</p>
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button onClick={() => { alert('Proposal Submitted!'); onNavigate('dashboard'); }} className="px-4 py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0]">
-              Submit Proposal
-            </button>
-            <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function SubmissionAndFeedback({ onNavigate }: ScreenProps) {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Submissions & Feedback</span>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Submissions</h1>
-        <button onClick={() => onNavigate('progress')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-          View Progress Tracking
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Submit New Document</h2>
-            <div className="border-2 border-dashed border-[#C5C3EC] rounded-md p-8 flex flex-col items-center justify-center bg-[#EEEDFB]/30">
-              <Upload className="w-8 h-8 text-[#312DC4] mb-3" />
-              <p className="text-sm font-medium text-gray-700">Upload Chapter or File</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, DOCX up to 10MB</p>
-              <button className="mt-4 px-4 py-2 bg-[#312DC4] text-white rounded-md text-sm font-medium hover:bg-[#2724b0]" onClick={() => { alert('Uploaded!'); onNavigate('dashboard'); }}>
-                Browse Files
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Submission History</h2>
-            <div className="space-y-4">
-              {[1, 2].map((item) => (
-                <div key={item} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-md bg-gray-50 gap-4">
-                  <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-sm">Chapter {item}: Documentation.pdf</p>
-                      <p className="text-xs text-gray-500">Submitted on Oct {10 + item}, 2023</p>
-                      <p className="text-xs text-gray-600 mt-2 font-medium">Feedback: "Good start, please revise section 2.1."</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-[#EEEDFB] text-[#312DC4] text-xs rounded-full border border-[#C5C3EC]">Reviewed</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Timeline</h2>
-            <div className="relative border-l border-[#C5C3EC] ml-3 space-y-6">
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1 w-3 h-3 bg-[#312DC4] rounded-full"></div>
-                <p className="text-sm font-medium text-gray-900">Proposal Approved</p>
-                <p className="text-xs text-gray-500">Sep 15, 2023</p>
-              </div>
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1 w-3 h-3 bg-[#312DC4] rounded-full"></div>
-                <p className="text-sm font-medium text-gray-900">Chapter 1 Uploaded</p>
-                <p className="text-xs text-gray-500">Oct 02, 2023</p>
-              </div>
-              <div className="relative pl-6">
-                <div className="absolute -left-1.5 top-1 w-3 h-3 bg-white border-2 border-gray-300 rounded-full"></div>
-                <p className="text-sm font-medium text-gray-500">Chapter 2 Due</p>
-                <p className="text-xs text-gray-400">Nov 01, 2023</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ProgressTracking({ onNavigate }: ScreenProps) {
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Progress Tracking</span>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Project Progress</h1>
-        <button onClick={() => onNavigate('dashboard')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
-          Back to Dashboard
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center justify-center">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6 w-full text-left">Overall Completion</h2>
-          <div className="relative w-40 h-40 flex items-center justify-center bg-[#EEEDFB] rounded-full border-8 border-[#312DC4]">
-            <div className="flex flex-col items-center">
-              <span className="text-3xl font-bold text-[#312DC4]">50%</span>
-              <span className="text-xs text-gray-500 mt-1">Completed</span>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 mt-6 text-center">Supervisor Approval: <span className="font-medium text-[#312DC4]">On Track</span></p>
-        </div>
-
-        <div className="md:col-span-2 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Milestones</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 border border-[#C5C3EC] rounded-md bg-[#EEEDFB]/40">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-[#312DC4]" />
-                <span className="text-sm font-medium text-gray-800">Proposal Approved</span>
-              </div>
-              <span className="text-xs text-[#312DC4] font-medium">100%</span>
-            </div>
-            <div className="flex items-center justify-between p-3 border border-[#C5C3EC] rounded-md bg-[#EEEDFB]/40">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-[#312DC4]" />
-                <span className="text-sm font-medium text-gray-800">Chapter 1</span>
-              </div>
-              <span className="text-xs text-[#312DC4] font-medium">100%</span>
-            </div>
-            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-white">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-[#312DC4] rounded-full flex items-center justify-center">
-                  <div className="w-2.5 h-2.5 bg-[#312DC4] rounded-full"></div>
-                </div>
-                <span className="text-sm font-medium text-gray-700">Chapter 2</span>
-              </div>
-              <span className="text-xs text-gray-500">In Progress</span>
-            </div>
-            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-white opacity-60">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-600">Chapter 3</span>
-              </div>
-              <span className="text-xs text-gray-400">Pending</span>
-            </div>
-            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md bg-white opacity-60">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-600">Final Submission</span>
-              </div>
-              <span className="text-xs text-gray-400">Pending</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Shared chat message types ────────────────────────────────────────────────
-
-interface Message {
-  id: number;
-  sender: 'me' | 'other';
-  type: 'text' | 'image' | 'video';
-  content: string;
-  time: string;
-}
-
-const STUDENT_THREAD: Message[] = [
-  { id: 1, sender: 'other', type: 'text', content: 'Hello! I have reviewed your Chapter 1 draft. Overall it is good but there are a few areas to improve.', time: '9:10 AM' },
-  { id: 2, sender: 'other', type: 'image', content: 'Annotated feedback on Chapter 1', time: '9:11 AM' },
-  { id: 3, sender: 'me', type: 'text', content: 'Thank you Dr. Yusuf! I will review your annotations and revise accordingly. Should I send the updated version here?', time: '9:25 AM' },
-  { id: 4, sender: 'other', type: 'text', content: 'Yes, please upload it here when you are done. Also watch this short clip on research methodology — it should help with Chapter 2.', time: '9:27 AM' },
-  { id: 5, sender: 'other', type: 'video', content: 'Research Methodology Overview', time: '9:28 AM' },
-  { id: 6, sender: 'me', type: 'text', content: 'Great, I will watch it tonight. Thank you!', time: '9:35 AM' },
-];
-
-// ─── Reusable ChatBubble ──────────────────────────────────────────────────────
-
-function ChatBubble({ msg }: { msg: Message }) {
-  const isMe = msg.sender === 'me';
-
-  if (msg.type === 'image') {
-    return (
-      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-        <div className={`max-w-[260px] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
-            <div className="w-60 h-36 bg-gray-100 flex flex-col items-center justify-center gap-2">
-              <Image className="w-8 h-8 text-gray-300" />
-              <span className="text-xs text-gray-400">{msg.content}</span>
-            </div>
-          </div>
-          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (msg.type === 'video') {
-    return (
-      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-        <div className={`max-w-[260px] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-          <div className={`rounded-xl overflow-hidden border ${isMe ? 'border-[#C5C3EC]' : 'border-gray-200'}`}>
-            <div className="w-60 h-36 bg-gray-800 flex flex-col items-center justify-center gap-2 relative">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-white ml-1" />
-              </div>
-              <span className="text-xs text-white/70">{msg.content}</span>
-            </div>
-          </div>
-          <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[70%] flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
-        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-          isMe
-            ? 'bg-[#312DC4] text-white rounded-br-sm'
-            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
-        }`}>
-          {msg.content}
-        </div>
-        <span className="text-xs text-gray-400 px-1">{msg.time}</span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Student Messaging Screen ─────────────────────────────────────────────────
-
-export function StudentMessaging({ onNavigate }: ScreenProps) {
-  const [inputText, setInputText] = useState('');
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
-
-  return (
-    <div className="max-w-5xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 10rem)' }}>
-      {/* Breadcrumb */}
-      <div className="flex items-center text-sm text-gray-500 mb-4 shrink-0">
-        <button onClick={() => onNavigate('dashboard')} className="hover:underline">Home</button>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900">Messages</span>
-      </div>
-
-      <div className="flex flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-
-        {/* ── Conversation sidebar ── */}
-        <aside className="w-72 border-r border-gray-200 flex flex-col shrink-0">
-          <div className="p-4 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Messages</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Search..." className="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#312DC4]" />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-            {/* Active conversation */}
-            <div className="flex items-start gap-3 px-4 py-3 bg-[#EEEDFB] cursor-pointer">
-              <div className="w-10 h-10 bg-[#312DC4] rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-white">AY</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-baseline">
-                  <p className="text-sm font-semibold text-[#312DC4]">Dr. Amina Yusuf</p>
-                  <span className="text-xs text-gray-400">9:28 AM</span>
-                </div>
-                <p className="text-xs text-gray-500 truncate">Watch this clip on research methodology...</p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── Chat thread ── */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Chat header */}
-          <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200 shrink-0">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Attach Proposal (optional)</label>
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setProposalFile(e.target.files?.[0] ?? null)} />
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#312DC4] rounded-full flex items-center justify-center">
-                <span className="text-xs font-bold text-white">AY</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">Dr. Amina Yusuf</p>
-                <p className="text-xs text-gray-400">Supervisor · Machine Learning & AI</p>
-              </div>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50">
+                <Upload className="w-4 h-4" /> Choose File
+              </button>
+              {proposalFile && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>{proposalFile.name}</span>
+                  <button type="button" onClick={() => setProposalFile(null)}><X className="w-3 h-3 text-gray-400 hover:text-red-500" /></button>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="Voice call">
-                <Phone className="w-4 h-4" />
-              </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500" title="More options">
-                <MoreVertical className="w-4 h-4" />
-              </button>
+          </div>
+          <button
+            type="submit"
+            disabled={submittingProposal}
+            className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60"
+          >
+            {submittingProposal ? 'Submitting…' : 'Submit Proposal'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── SubmissionAndFeedback ────────────────────────────────────────────────────
+export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) {
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [chapterLabel, setChapterLabel] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    submissionsApi.list().then(setSubmissions).finally(() => setLoading(false));
+  }, []);
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) return;
+    setUploading(true);
+    setUploadSuccess(false);
+    try {
+      const newSub = await submissionsApi.upload(file, chapterLabel);
+      setSubmissions(prev => [newSub, ...prev]);
+      setFile(null);
+      setChapterLabel('');
+      setUploadSuccess(true);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const statusConfig: Record<Submission['status'], { label: string; cls: string; icon: React.ElementType }> = {
+    pending_review: { label: 'Pending Review', cls: 'bg-amber-50 text-amber-700',      icon: Clock },
+    reviewed:       { label: 'Reviewed',        cls: 'bg-blue-50 text-blue-700',        icon: CheckCircle },
+    approved:       { label: 'Approved',         cls: 'bg-emerald-50 text-emerald-700', icon: CheckCircle },
+    rejected:       { label: 'Rejected',         cls: 'bg-red-50 text-red-700',         icon: AlertCircle },
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">Submissions & Feedback</h2>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Upload New Submission</h3>
+
+        {uploadSuccess && (
+          <div className="mb-4 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+            <CheckCircle className="w-4 h-4 shrink-0" /> File uploaded successfully and sent for review.
+          </div>
+        )}
+
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Chapter / Document Label</label>
+            <input
+              type="text"
+              required
+              value={chapterLabel}
+              onChange={(e) => setChapterLabel(e.target.value)}
+              placeholder="e.g. Chapter 3: Methodology"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <div
+              onClick={() => fileRef.current?.click()}
+              className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-[#C5C3EC] hover:bg-[#EEEDFB]/30 transition-colors"
+            >
+              {file ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
+                  <FileText className="w-5 h-5 text-[#312DC4]" />
+                  <span>{file.name}</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }}>
+                    <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Click to browse, or drag & drop</p>
+                  <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX (max 20 MB)</p>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
-            {/* Date separator */}
-            <div className="flex items-center gap-3 my-2">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 shrink-0">Today</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
+          <button
+            type="submit"
+            disabled={!file || uploading}
+            className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-50"
+          >
+            {uploading ? 'Uploading…' : 'Submit for Review'}
+          </button>
+        </form>
+      </div>
 
-            {STUDENT_THREAD.map((msg) => (
-              <ChatBubble key={msg.id} msg={msg} />
-            ))}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-700 mb-4">Submission History</h3>
+        {loading ? (
+          <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+        ) : submissions.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-6">No submissions yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {submissions.map((sub) => {
+              const cfg = statusConfig[sub.status];
+              const Icon = cfg.icon;
+              return (
+                <div key={sub.id} className="border border-gray-100 rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-[#312DC4] shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{sub.chapterLabel}</p>
+                        <p className="text-xs text-gray-400">{sub.fileName} · {sub.fileSize} · {new Date(sub.uploadedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${cfg.cls}`}>
+                      <Icon className="w-3 h-3" /> {cfg.label}
+                    </span>
+                  </div>
+                  {sub.feedback && (
+                    <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-md p-3 border-l-2 border-[#312DC4]">
+                      <p className="text-xs font-medium text-gray-500 mb-1">Supervisor Feedback</p>
+                      {sub.feedback}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── ProgressTracking ─────────────────────────────────────────────────────────
+export function ProgressTracking({ onNavigate: _onNavigate }: ScreenProps) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    projectApi.current().then(setProject).finally(() => setLoading(false));
+  }, []);
+
+  const milestoneConfig = {
+    completed:   { cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+    in_progress: { cls: 'bg-[#EEEDFB] text-[#312DC4] border-[#C5C3EC]',      dot: 'bg-[#312DC4]' },
+    pending:     { cls: 'bg-gray-50 text-gray-500 border-gray-200',           dot: 'bg-gray-300' },
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800">Progress Tracking</h2>
+
+      {loading ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-3 w-full" />
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+        </div>
+      ) : !project ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-sm text-gray-500">
+          No active project found.
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-700">Overall Progress</h3>
+              <span className="text-2xl font-bold text-[#312DC4]">{project.overallProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3">
+              <div className="bg-[#312DC4] h-3 rounded-full transition-all duration-700" style={{ width: `${project.overallProgress}%` }} />
+            </div>
+            <p className="text-sm text-gray-500 mt-2">{project.topicTitle}</p>
           </div>
 
-          {/* Input bar */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
-            {/* Attach menu */}
-            {showAttachMenu && (
-              <div className="flex gap-3 mb-3 px-1">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-700 mb-4">Milestones</h3>
+            <div className="space-y-3">
+              {project.milestones.map((m) => {
+                const cfg = milestoneConfig[m.status];
+                return (
+                  <div key={m.id} className={`flex items-center gap-4 border rounded-lg px-4 py-3 ${cfg.cls}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${cfg.dot}`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{m.label}</p>
+                      {m.dueDate && <p className="text-xs opacity-70">Due {new Date(m.dueDate).toLocaleDateString()}</p>}
+                    </div>
+                    <div className="w-24">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="opacity-70">Progress</span>
+                        <span className="font-medium">{m.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-white/50 rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${cfg.dot}`} style={{ width: `${m.percentage}%` }} />
+                      </div>
+                    </div>
+                    <span className="text-xs font-medium capitalize opacity-80 shrink-0">
+                      {m.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── StudentMessaging ─────────────────────────────────────────────────────────
+export function StudentMessaging({ onNavigate: _onNavigate }: ScreenProps) {
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingConvs, setLoadingConvs] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesApi.conversations('student').then((data) => {
+      setConversations(data);
+      if (data.length > 0) setActiveConvId(data[0].id);
+    }).finally(() => setLoadingConvs(false));
+  }, []);
+
+  useEffect(() => {
+    if (!activeConvId) return;
+    setLoadingMsgs(true);
+    messagesApi.thread(activeConvId, 'student').then(setMessages).finally(() => setLoadingMsgs(false));
+  }, [activeConvId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const activeConv = conversations.find(c => c.id === activeConvId);
+
+  const sendText = async () => {
+    if (!text.trim() || !activeConvId || !user) return;
+    setSending(true);
+    try {
+      const msg = await messagesApi.send(activeConvId, user.id, user.name, text.trim());
+      setMessages(prev => [...prev, msg]);
+      setText('');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendMedia = async (file: File, type: 'image' | 'video') => {
+    if (!activeConvId || !user) return;
+    setSending(true);
+    setShowAttachMenu(false);
+    try {
+      const msg = await messagesApi.sendMedia(activeConvId, user.id, user.name, file, type);
+      setMessages(prev => [...prev, msg]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-800">Messages</h2>
+
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex h-[calc(100vh-220px)] min-h-[480px]">
+        {/* Conversation list */}
+        <div className="w-72 border-r border-gray-200 flex flex-col shrink-0">
+          <div className="p-4 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-700">Conversations</p>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {loadingConvs
+              ? Array.from({ length: 2 }).map((_, i) => <div key={i} className="p-4"><Skeleton className="h-12 w-full" /></div>)
+              : conversations.map((conv) => (
                 <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
+                  key={conv.id}
+                  onClick={() => setActiveConvId(conv.id)}
+                  className={`w-full flex items-center gap-3 p-4 border-b border-gray-50 text-left hover:bg-gray-50 transition-colors ${activeConvId === conv.id ? 'bg-[#EEEDFB]' : ''}`}
                 >
-                  <Image className="w-4 h-4" /> Share Image
+                  <div className="w-9 h-9 rounded-full bg-[#312DC4] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {conv.participantInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-800 truncate">{conv.participantName}</p>
+                      {conv.unreadCount > 0 && (
+                        <span className="ml-1 w-4 h-4 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center shrink-0">{conv.unreadCount}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{conv.participantSubtitle}</p>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">{conv.lastMessage}</p>
+                  </div>
                 </button>
-                <button
-                  onClick={() => setShowAttachMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#EEEDFB] text-[#312DC4] rounded-lg text-xs font-medium hover:bg-[#E3E2F7] border border-[#C5C3EC]"
-                >
-                  <Video className="w-4 h-4" /> Share Video
-                </button>
-                <button onClick={() => setShowAttachMenu(false)} className="ml-auto p-1 text-gray-400 hover:text-gray-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
-                className={`p-2 rounded-full transition-colors ${showAttachMenu ? 'bg-[#EEEDFB] text-[#312DC4]' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
-                title="Attach file"
-              >
-                <Paperclip className="w-5 h-5" />
-              </button>
-
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] focus:bg-white border border-transparent focus:border-[#312DC4]"
-              />
-
-              <button
-                className={`p-2.5 rounded-full transition-colors ${inputText.trim() ? 'bg-[#312DC4] text-white hover:bg-[#2724b0]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                disabled={!inputText.trim()}
-                title="Send"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
+              ))
+            }
           </div>
+        </div>
+
+        {/* Thread */}
+        <div className="flex-1 flex flex-col">
+          {activeConv ? (
+            <>
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                <div className="w-8 h-8 rounded-full bg-[#312DC4] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {activeConv.participantInitials}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{activeConv.participantName}</p>
+                  <p className="text-xs text-gray-400">{activeConv.participantSubtitle}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+                {loadingMsgs
+                  ? <div className="space-y-3"><Skeleton className="h-12 w-3/5" /><Skeleton className="h-10 w-2/5 ml-auto" /></div>
+                  : messages.map((msg) => <ChatBubble key={msg.id} msg={msg} isMine={msg.senderId === user?.id} />)
+                }
+                <div ref={bottomRef} />
+              </div>
+
+              <div className="px-4 py-3 border-t border-gray-100 bg-white">
+                <div className="flex items-end gap-2">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowAttachMenu(!showAttachMenu)}
+                      className="p-2 text-gray-400 hover:text-[#312DC4] hover:bg-[#EEEDFB] rounded-lg transition-colors"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    {showAttachMenu && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 z-10">
+                        <button onClick={() => imageRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <ImageIcon className="w-4 h-4 text-[#312DC4]" /> Image
+                        </button>
+                        <button onClick={() => videoRef.current?.click()} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          <Video className="w-4 h-4 text-[#312DC4]" /> Video
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) sendMedia(e.target.files[0], 'image'); }} />
+                  <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) sendMedia(e.target.files[0], 'video'); }} />
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
+                    rows={1}
+                    placeholder="Type a message…"
+                    className="flex-1 resize-none px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] bg-gray-50"
+                  />
+                  <button
+                    onClick={sendText}
+                    disabled={!text.trim() || sending}
+                    className="p-2 bg-[#312DC4] hover:bg-[#2724b0] text-white rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
+              Select a conversation to start messaging.
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,22 +1,14 @@
 import React from 'react';
 import {
-  Bell,
-  Search,
-  LogOut,
-  User,
-  BookOpen,
-  LayoutDashboard,
-  FileText,
-  List,
-  Users,
-  BarChart,
-  CheckSquare,
-  ClipboardList,
-  MessageSquare
+  Bell, Search, LogOut, User, BookOpen,
+  LayoutDashboard, FileText, List, Users, BarChart,
+  ClipboardList, MessageSquare,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import type { UserRole } from '../../types';
 
 interface LayoutProps {
-  role: 'student' | 'lecturer' | 'admin';
+  role: UserRole;
   currentScreen: string;
   onNavigate: (screen: string) => void;
   onLogout: () => void;
@@ -24,29 +16,31 @@ interface LayoutProps {
 }
 
 export function Layout({ role, currentScreen, onNavigate, onLogout, children }: LayoutProps) {
+  const { user } = useAuth();
+
   const getNavItems = () => {
     switch (role) {
       case 'student':
         return [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'topic-selection', label: 'Project Topics', icon: List },
-          { id: 'submission', label: 'Submissions', icon: FileText },
-          { id: 'progress', label: 'Progress Tracking', icon: BarChart },
-          { id: 'messages', label: 'Messages', icon: MessageSquare },
+          { id: 'dashboard',       label: 'Dashboard',        icon: LayoutDashboard },
+          { id: 'topic-selection', label: 'Project Topics',   icon: List },
+          { id: 'submission',      label: 'Submissions',      icon: FileText },
+          { id: 'progress',        label: 'Progress Tracking', icon: BarChart },
+          { id: 'messages',        label: 'Messages',         icon: MessageSquare },
         ];
       case 'lecturer':
         return [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'topic-upload', label: 'Upload Topics', icon: FileText },
-          { id: 'view-students', label: 'My Students', icon: Users },
-          { id: 'workload', label: 'Workload Tracking', icon: BarChart },
-          { id: 'messages', label: 'Messages', icon: MessageSquare },
+          { id: 'dashboard',     label: 'Dashboard',         icon: LayoutDashboard },
+          { id: 'topic-upload',  label: 'Upload Topics',     icon: FileText },
+          { id: 'view-students', label: 'My Students',       icon: Users },
+          { id: 'workload',      label: 'Workload Tracking', icon: BarChart },
+          { id: 'messages',      label: 'Messages',          icon: MessageSquare },
         ];
       case 'admin':
         return [
-          { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { id: 'dashboard',             label: 'Dashboard',          icon: LayoutDashboard },
           { id: 'supervisor-allocation', label: 'Allocate Supervisors', icon: Users },
-          { id: 'report-generation', label: 'Reports', icon: ClipboardList },
+          { id: 'report-generation',     label: 'Reports',            icon: ClipboardList },
         ];
       default:
         return [];
@@ -54,6 +48,8 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
   };
 
   const navItems = getNavItems();
+  const displayName = user?.name ?? (role.charAt(0).toUpperCase() + role.slice(1) + ' User');
+  const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -80,14 +76,18 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
         <div className="flex items-center gap-4">
           <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#312DC4] rounded-full"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#312DC4] rounded-full" />
           </button>
           <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
             <div className="w-8 h-8 bg-[#EEEDFB] rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-[#312DC4]" />
+              {initials
+                ? <span className="text-xs font-semibold text-[#312DC4]">{initials}</span>
+                : <User className="w-4 h-4 text-[#312DC4]" />
+              }
             </div>
             <div className="hidden sm:block text-sm">
-              <p className="font-medium text-gray-700 capitalize">{role} User</p>
+              <p className="font-medium text-gray-700">{displayName}</p>
+              <p className="text-xs text-gray-400 capitalize">{role}</p>
             </div>
           </div>
           <button onClick={onLogout} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full ml-2" title="Logout">
@@ -97,7 +97,7 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
+        {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 hidden lg:block overflow-y-auto">
           <nav className="p-4 space-y-1">
             {navItems.map((item) => (

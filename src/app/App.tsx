@@ -1,70 +1,45 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from '../context/AuthContext';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 
-// Student Screens
 import {
-  StudentDashboard,
-  ProjectTopicSelection,
-  SubmissionAndFeedback,
-  ProgressTracking,
-  StudentMessaging,
+  StudentDashboard, ProjectTopicSelection, SubmissionAndFeedback,
+  ProgressTracking, StudentMessaging,
 } from './components/StudentScreens';
 
-// Lecturer Screens
 import {
-  LecturerDashboard,
-  ProjectTopicUpload,
-  ViewAssignedStudents,
-  SupervisorWorkloadTracking,
-  LecturerMessaging,
+  LecturerDashboard, ProjectTopicUpload, ViewAssignedStudents,
+  SupervisorWorkloadTracking, LecturerMessaging,
 } from './components/LecturerScreens';
 
-// Admin Screens
 import {
-  AdminDashboard,
-  TopicApproval,
-  SupervisorAllocation,
-  ReportGeneration
+  AdminDashboard, TopicApproval, SupervisorAllocation, ReportGeneration,
 } from './components/AdminScreens';
 
-type Role = 'student' | 'lecturer' | 'admin' | null;
-
-export default function App() {
-  const [role, setRole] = useState<Role>(null);
+function AppShell() {
+  const { user, logout } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<string>('dashboard');
 
-  const handleLogin = (selectedRole: 'student' | 'lecturer' | 'admin') => {
-    setRole(selectedRole);
-    setCurrentScreen('dashboard');
-  };
+  const handleNavigate = (screen: string) => setCurrentScreen(screen);
 
-  const handleLogout = () => {
-    setRole(null);
-    setCurrentScreen('dashboard');
-  };
-
-  const handleNavigate = (screen: string) => {
-    setCurrentScreen(screen);
-  };
-
-  if (!role) {
-    return <Login onLogin={handleLogin} />;
+  if (!user) {
+    return <Login />;
   }
 
   const renderScreen = () => {
-    if (role === 'student') {
+    if (user.role === 'student') {
       switch (currentScreen) {
-        case 'dashboard':     return <StudentDashboard onNavigate={handleNavigate} />;
+        case 'dashboard':       return <StudentDashboard onNavigate={handleNavigate} />;
         case 'topic-selection': return <ProjectTopicSelection onNavigate={handleNavigate} />;
-        case 'submission':    return <SubmissionAndFeedback onNavigate={handleNavigate} />;
-        case 'progress':      return <ProgressTracking onNavigate={handleNavigate} />;
-        case 'messages':      return <StudentMessaging onNavigate={handleNavigate} />;
-        default:              return <StudentDashboard onNavigate={handleNavigate} />;
+        case 'submission':      return <SubmissionAndFeedback onNavigate={handleNavigate} />;
+        case 'progress':        return <ProgressTracking onNavigate={handleNavigate} />;
+        case 'messages':        return <StudentMessaging onNavigate={handleNavigate} />;
+        default:                return <StudentDashboard onNavigate={handleNavigate} />;
       }
     }
 
-    if (role === 'lecturer') {
+    if (user.role === 'lecturer') {
       switch (currentScreen) {
         case 'dashboard':     return <LecturerDashboard onNavigate={handleNavigate} />;
         case 'topic-upload':  return <ProjectTopicUpload onNavigate={handleNavigate} />;
@@ -75,13 +50,13 @@ export default function App() {
       }
     }
 
-    if (role === 'admin') {
+    if (user.role === 'admin') {
       switch (currentScreen) {
-        case 'dashboard':            return <AdminDashboard onNavigate={handleNavigate} />;
-        case 'topic-approval':       return <TopicApproval onNavigate={handleNavigate} />;
+        case 'dashboard':             return <AdminDashboard onNavigate={handleNavigate} />;
+        case 'topic-approval':        return <TopicApproval onNavigate={handleNavigate} />;
         case 'supervisor-allocation': return <SupervisorAllocation onNavigate={handleNavigate} />;
-        case 'report-generation':    return <ReportGeneration onNavigate={handleNavigate} />;
-        default:                     return <AdminDashboard onNavigate={handleNavigate} />;
+        case 'report-generation':     return <ReportGeneration onNavigate={handleNavigate} />;
+        default:                      return <AdminDashboard onNavigate={handleNavigate} />;
       }
     }
 
@@ -90,12 +65,20 @@ export default function App() {
 
   return (
     <Layout
-      role={role}
+      role={user.role}
       currentScreen={currentScreen}
       onNavigate={handleNavigate}
-      onLogout={handleLogout}
+      onLogout={logout}
     >
       {renderScreen()}
     </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   );
 }
