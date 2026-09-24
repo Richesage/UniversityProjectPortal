@@ -4,12 +4,13 @@ import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 
 import {
-  StudentDashboard, ProjectTopicSelection, SubmissionAndFeedback,
-  ProgressTracking, StudentMessaging,
+  StudentDashboard, FindSupervisor, ProjectTopicSelection,
+  SubmissionAndFeedback, ProgressTracking, StudentMessaging,
 } from './components/StudentScreens';
 
 import {
-  LecturerDashboard, ProjectTopicUpload, ViewAssignedStudents,
+  LecturerDashboard, LecturerProfile, StudentSupervisionRequests,
+  ProjectTopicUpload, ViewAssignedStudents,
   SupervisorWorkloadTracking, LecturerMessaging,
 } from './components/LecturerScreens';
 
@@ -30,23 +31,26 @@ function AppShell() {
   const renderScreen = () => {
     if (user.role === 'student') {
       switch (currentScreen) {
-        case 'dashboard':       return <StudentDashboard onNavigate={handleNavigate} />;
-        case 'topic-selection': return <ProjectTopicSelection onNavigate={handleNavigate} />;
-        case 'submission':      return <SubmissionAndFeedback onNavigate={handleNavigate} />;
-        case 'progress':        return <ProgressTracking onNavigate={handleNavigate} />;
-        case 'messages':        return <StudentMessaging onNavigate={handleNavigate} />;
-        default:                return <StudentDashboard onNavigate={handleNavigate} />;
+        case 'dashboard':        return <StudentDashboard onNavigate={handleNavigate} />;
+        case 'find-supervisor':  return <FindSupervisor onNavigate={handleNavigate} />;
+        case 'topic-selection':  return <ProjectTopicSelection onNavigate={handleNavigate} />;
+        case 'submission':       return <SubmissionAndFeedback onNavigate={handleNavigate} />;
+        case 'progress':         return <ProgressTracking onNavigate={handleNavigate} />;
+        case 'messages':         return <StudentMessaging onNavigate={handleNavigate} />;
+        default:                 return <StudentDashboard onNavigate={handleNavigate} />;
       }
     }
 
     if (user.role === 'lecturer') {
       switch (currentScreen) {
-        case 'dashboard':     return <LecturerDashboard onNavigate={handleNavigate} />;
-        case 'topic-upload':  return <ProjectTopicUpload onNavigate={handleNavigate} />;
-        case 'view-students': return <ViewAssignedStudents onNavigate={handleNavigate} />;
-        case 'workload':      return <SupervisorWorkloadTracking onNavigate={handleNavigate} />;
-        case 'messages':      return <LecturerMessaging onNavigate={handleNavigate} />;
-        default:              return <LecturerDashboard onNavigate={handleNavigate} />;
+        case 'dashboard':        return <LecturerDashboard onNavigate={handleNavigate} />;
+        case 'my-profile':       return <LecturerProfile onNavigate={handleNavigate} />;
+        case 'student-requests': return <StudentSupervisionRequests onNavigate={handleNavigate} />;
+        case 'topic-upload':     return <ProjectTopicUpload onNavigate={handleNavigate} />;
+        case 'view-students':    return <ViewAssignedStudents onNavigate={handleNavigate} />;
+        case 'workload':         return <SupervisorWorkloadTracking onNavigate={handleNavigate} />;
+        case 'messages':         return <LecturerMessaging onNavigate={handleNavigate} />;
+        default:                 return <LecturerDashboard onNavigate={handleNavigate} />;
       }
     }
 

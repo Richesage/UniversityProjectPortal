@@ -3,6 +3,9 @@ import {
   Users, FileText, Upload, BarChart2, MessageSquare,
   CheckCircle, Clock, AlertCircle, Search, X,
   ImageIcon, Video, Send, Paperclip, Plus,
+  UserCheck, Award, BookOpen, PenLine, Save,
+  Calendar, Link2, MapPin, Radio, Star,
+  ExternalLink, Megaphone, Phone, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { topicsApi, lecturerApi, messagesApi, submissionsApi } from '../../lib/api';
@@ -38,11 +41,64 @@ function ChatBubble({ msg, isMine }: { msg: Message; isMine: boolean }) {
             <p className={`text-xs ${isMine ? 'opacity-80' : 'text-gray-500'}`}>{msg.content}</p>
           </div>
         )}
+        {(msg as any).type === 'meeting' && (
+          <div className="space-y-1">
+            <div className={`rounded-lg p-2.5 ${isMine ? 'bg-white/15' : 'bg-[#EEEDFB]'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Calendar className={`w-3.5 h-3.5 ${isMine ? 'text-white' : 'text-[#312DC4]'}`} />
+                <span className={`text-xs font-semibold ${isMine ? 'text-white' : 'text-[#312DC4]'}`}>Meeting Scheduled</span>
+              </div>
+              <p className="text-xs leading-relaxed">{msg.content}</p>
+            </div>
+          </div>
+        )}
         <p className={`text-xs mt-1 ${isMine ? 'text-white/60 text-right' : 'text-gray-400'}`}>{time}</p>
       </div>
     </div>
   );
 }
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+const MOCK_SUPERVISION_REQUESTS = [
+  { id: 'sr1', studentName: 'Kofi Asante', regNo: 'CS/2023/078', program: 'BSc Computer Science', topicInterest: 'Machine Learning for Fraud Detection in Mobile Banking', message: 'I have taken your AI course and scored distinction. I am very interested in your research area and would be honored to work under your supervision for my final year project.', submittedAt: '2026-09-09T10:00:00Z', status: 'pending' },
+  { id: 'sr2', studentName: 'Efua Boateng', regNo: 'CS/2023/032', program: 'BSc Computer Science', topicInterest: 'Natural Language Processing for Ghanaian Languages', message: 'My background in linguistics combined with computer science makes me a strong fit for NLP research. I have already reviewed three of your published papers on the subject.', submittedAt: '2026-09-08T14:00:00Z', status: 'pending' },
+  { id: 'sr3', studentName: 'Yaw Darko', regNo: 'SE/2023/091', program: 'BSc Software Engineering', topicInterest: 'Smart Healthcare Mobile Application with AI Diagnostics', message: 'I have 2 years of React Native experience and am passionate about applying AI to solve healthcare challenges in Ghana.', submittedAt: '2026-09-07T09:30:00Z', status: 'pending' },
+];
+
+interface SupervisionRequest {
+  id: string;
+  studentName: string;
+  regNo: string;
+  program: string;
+  topicInterest: string;
+  message: string;
+  submittedAt: string;
+  status: 'pending' | 'admitted' | 'denied';
+}
+
+interface MeetingForm {
+  platform: 'googlemeet' | 'zoom' | 'teams' | 'physical';
+  date: string;
+  time: string;
+  topic: string;
+  link: string;
+  location: string;
+  sendTo: 'all' | string;
+}
+
+const PLATFORM_LABELS: Record<string, string> = {
+  googlemeet: 'Google Meet',
+  zoom: 'Zoom',
+  teams: 'Microsoft Teams',
+  physical: 'Physical Meeting',
+};
+
+const PLATFORM_ICONS: Record<string, string> = {
+  googlemeet: '🎥',
+  zoom: '💻',
+  teams: '🖥️',
+  physical: '📍',
+};
 
 // ─── LecturerDashboard ────────────────────────────────────────────────────────
 export function LecturerDashboard({ onNavigate }: ScreenProps) {
@@ -55,9 +111,9 @@ export function LecturerDashboard({ onNavigate }: ScreenProps) {
   }, []);
 
   const cards = [
-    { label: 'Assigned Students', value: stats.assignedStudents, icon: Users, color: 'text-[#312DC4]', bg: 'bg-[#EEEDFB]' },
+    { label: 'Assigned Students', value: stats.assignedStudents, icon: Users,    color: 'text-[#312DC4]',   bg: 'bg-[#EEEDFB]' },
     { label: 'Active Projects',   value: stats.activeProjects,   icon: FileText, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Pending Reviews',   value: stats.pendingReviews,   icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Pending Reviews',   value: stats.pendingReviews,   icon: Clock,    color: 'text-amber-600',   bg: 'bg-amber-50' },
   ];
 
   return (
@@ -92,17 +148,19 @@ export function LecturerDashboard({ onNavigate }: ScreenProps) {
             style={{ width: `${stats.workloadPercent}%` }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">{stats.workloadPercent >= 90 ? 'Near capacity — contact admin to adjust limits.' : 'Within acceptable range.'}</p>
+        <p className="text-xs text-gray-400 mt-1">{stats.workloadPercent >= 90 ? 'Near capacity — review workload settings.' : 'Within acceptable range.'}</p>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-700 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Upload Topic',   screen: 'topic-upload',  icon: Upload },
-            { label: 'My Students',    screen: 'view-students', icon: Users },
-            { label: 'Workload',       screen: 'workload',      icon: BarChart2 },
-            { label: 'Messages',       screen: 'messages',      icon: MessageSquare },
+            { label: 'My Profile',          screen: 'my-profile',       icon: UserCheck },
+            { label: 'Student Requests',    screen: 'student-requests', icon: Users },
+            { label: 'Upload Topic',        screen: 'topic-upload',     icon: Upload },
+            { label: 'My Students',         screen: 'view-students',    icon: BookOpen },
+            { label: 'Workload',            screen: 'workload',         icon: BarChart2 },
+            { label: 'Messages',            screen: 'messages',         icon: MessageSquare },
           ].map((a) => (
             <button
               key={a.screen}
@@ -115,6 +173,452 @@ export function LecturerDashboard({ onNavigate }: ScreenProps) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── LecturerProfile ─────────────────────────────────────────────────────────
+export function LecturerProfile({ onNavigate: _onNavigate }: ScreenProps) {
+  const { user } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [profile, setProfile] = useState({
+    title: 'Dr.',
+    bio: 'I am a researcher and academic with over a decade of experience in my field. My work focuses on applying cutting-edge computational methods to solve real-world problems. I am passionate about mentoring the next generation of engineers and researchers.',
+    specializations: ['Artificial Intelligence', 'Machine Learning', 'Computer Vision'],
+    awards: ['Best Research Paper Award — IEEE 2024', 'Faculty Excellence in Teaching 2023'],
+    certifications: ['PhD Computer Science — MIT', 'Google Professional ML Engineer', 'Certified Data Scientist (DASCA)'],
+    maxStudents: 8,
+    openSlots: 3,
+    requirePlagiarismCheck: true,
+    plagiarismThreshold: 20,
+    allowStudentsToSeeCapacity: true,
+  });
+  const [newSpec, setNewSpec] = useState('');
+  const [newAward, setNewAward] = useState('');
+  const [newCert, setNewCert] = useState('');
+
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 900));
+    setSaving(false);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const addToList = (field: 'specializations' | 'awards' | 'certifications', value: string, clear: () => void) => {
+    if (!value.trim()) return;
+    setProfile(p => ({ ...p, [field]: [...p[field], value.trim()] }));
+    clear();
+  };
+
+  const removeFromList = (field: 'specializations' | 'awards' | 'certifications', idx: number) => {
+    setProfile(p => ({ ...p, [field]: p[field].filter((_, i) => i !== idx) }));
+  };
+
+  const titles = ['Prof.', 'Assoc. Prof.', 'Dr.', 'Mr.', 'Mrs.', 'Ms.'];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-800">My Profile</h2>
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-sm text-emerald-600 font-medium">✓ Profile saved</span>}
+          {editing ? (
+            <>
+              <button onClick={handleSave} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60">
+                <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={() => setEditing(false)}
+                className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setEditing(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-[#312DC4] border border-[#C5C3EC] bg-[#EEEDFB] hover:bg-[#E3E2F7]">
+              <PenLine className="w-4 h-4" /> Edit Profile
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Profile header */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-start gap-6">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-[#EEEDFB] border-2 border-[#C5C3EC] flex items-center justify-center text-2xl font-bold text-[#312DC4]">
+              {(user?.name ?? 'L').split(' ').map(w => w[0]).join('').slice(0, 2)}
+            </div>
+            {editing && (
+              <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#312DC4] text-white flex items-center justify-center hover:bg-[#2724b0] text-xs" title="Upload photo">
+                +
+              </button>
+            )}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              {editing ? (
+                <select value={profile.title} onChange={(e) => setProfile(p => ({ ...p, title: e.target.value }))}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+                  {titles.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              ) : (
+                <span className="text-sm font-medium text-[#312DC4] bg-[#EEEDFB] px-2 py-0.5 rounded">{profile.title}</span>
+              )}
+              <h3 className="text-lg font-bold text-gray-800">{user?.name ?? 'Faculty Member'}</h3>
+            </div>
+            <p className="text-sm text-gray-500">{user?.email ?? 'lecturer@university.edu'}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full">{(user as any)?.department ?? 'Computer Science'}</span>
+              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${profile.openSlots > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                {profile.openSlots > 0 ? `${profile.openSlots} slot${profile.openSlots !== 1 ? 's' : ''} available` : 'No slots available'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Professional Bio</p>
+          {editing ? (
+            <textarea rows={4} value={profile.bio} onChange={(e) => setProfile(p => ({ ...p, bio: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none" />
+          ) : (
+            <p className="text-sm text-gray-700 leading-relaxed">{profile.bio}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Specializations */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen className="w-4 h-4 text-[#312DC4]" />
+            <h3 className="font-semibold text-gray-700">Areas of Specialization</h3>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {profile.specializations.map((s, i) => (
+              <span key={i} className="flex items-center gap-1 text-sm font-medium text-[#312DC4] bg-[#EEEDFB] border border-[#C5C3EC] rounded-full px-3 py-1">
+                {s}
+                {editing && <button onClick={() => removeFromList('specializations', i)} className="ml-1 text-[#312DC4]/60 hover:text-red-500"><X className="w-3 h-3" /></button>}
+              </span>
+            ))}
+          </div>
+          {editing && (
+            <div className="flex gap-2">
+              <input type="text" value={newSpec} onChange={(e) => setNewSpec(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { addToList('specializations', newSpec, () => setNewSpec('')); } }}
+                placeholder="Add specialization…"
+                className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+              <button onClick={() => addToList('specializations', newSpec, () => setNewSpec(''))}
+                className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0]">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Awards */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Award className="w-4 h-4 text-amber-500" />
+            <h3 className="font-semibold text-gray-700">Awards & Recognition</h3>
+          </div>
+          <ul className="space-y-2 mb-3">
+            {profile.awards.map((a, i) => (
+              <li key={i} className="flex items-start justify-between gap-2 text-sm">
+                <span className="flex items-start gap-2 text-gray-700"><Star className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" /> {a}</span>
+                {editing && <button onClick={() => removeFromList('awards', i)} className="text-gray-300 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>}
+              </li>
+            ))}
+          </ul>
+          {editing && (
+            <div className="flex gap-2">
+              <input type="text" value={newAward} onChange={(e) => setNewAward(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { addToList('awards', newAward, () => setNewAward('')); } }}
+                placeholder="Add award…"
+                className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+              <button onClick={() => addToList('awards', newAward, () => setNewAward(''))}
+                className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0]">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Certifications */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
+            <h3 className="font-semibold text-gray-700">Qualifications & Certifications</h3>
+          </div>
+          <ul className="space-y-2 mb-3">
+            {profile.certifications.map((c, i) => (
+              <li key={i} className="flex items-start justify-between gap-2 text-sm">
+                <span className="flex items-start gap-2 text-gray-700"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> {c}</span>
+                {editing && <button onClick={() => removeFromList('certifications', i)} className="text-gray-300 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>}
+              </li>
+            ))}
+          </ul>
+          {editing && (
+            <div className="flex gap-2">
+              <input type="text" value={newCert} onChange={(e) => setNewCert(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { addToList('certifications', newCert, () => setNewCert('')); } }}
+                placeholder="Add qualification…"
+                className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+              <button onClick={() => addToList('certifications', newCert, () => setNewCert(''))}
+                className="px-3 py-1.5 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0]">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Supervision settings */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <UserCheck className="w-4 h-4 text-[#312DC4]" />
+            <h3 className="font-semibold text-gray-700">Supervision Settings</h3>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Maximum students I can supervise</label>
+              {editing ? (
+                <input type="number" min={1} max={30} value={profile.maxStudents}
+                  onChange={(e) => setProfile(p => ({ ...p, maxStudents: Number(e.target.value) }))}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+              ) : (
+                <p className="text-sm font-semibold text-gray-800">{profile.maxStudents} students</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Show capacity to students</p>
+                <p className="text-xs text-gray-400">Students can see how many slots are available</p>
+              </div>
+              <button
+                disabled={!editing}
+                onClick={() => setProfile(p => ({ ...p, allowStudentsToSeeCapacity: !p.allowStudentsToSeeCapacity }))}
+                className={`w-10 h-5.5 rounded-full relative transition-colors ${editing ? '' : 'opacity-60 cursor-not-allowed'} ${profile.allowStudentsToSeeCapacity ? 'bg-[#312DC4]' : 'bg-gray-300'}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${profile.allowStudentsToSeeCapacity ? 'left-5' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Require plagiarism check on submissions</p>
+                  <p className="text-xs text-gray-400">Students must pass check before submission is accepted</p>
+                </div>
+                <button
+                  disabled={!editing}
+                  onClick={() => setProfile(p => ({ ...p, requirePlagiarismCheck: !p.requirePlagiarismCheck }))}
+                  className={`w-10 h-5.5 rounded-full relative transition-colors ${editing ? '' : 'opacity-60 cursor-not-allowed'} ${profile.requirePlagiarismCheck ? 'bg-[#312DC4]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${profile.requirePlagiarismCheck ? 'left-5' : 'left-0.5'}`} />
+                </button>
+              </div>
+              {profile.requirePlagiarismCheck && (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-gray-500">Similarity threshold:</p>
+                  {editing ? (
+                    <input type="number" min={5} max={50} value={profile.plagiarismThreshold}
+                      onChange={(e) => setProfile(p => ({ ...p, plagiarismThreshold: Number(e.target.value) }))}
+                      className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-800">{profile.plagiarismThreshold}%</span>
+                  )}
+                  <p className="text-xs text-gray-400">max similarity</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── StudentSupervisionRequests ───────────────────────────────────────────────
+export function StudentSupervisionRequests({ onNavigate: _onNavigate }: ScreenProps) {
+  const [requests, setRequests] = useState<SupervisionRequest[]>(MOCK_SUPERVISION_REQUESTS as SupervisionRequest[]);
+  const [viewingRequest, setViewingRequest] = useState<SupervisionRequest | null>(null);
+  const [denyModal, setDenyModal] = useState<SupervisionRequest | null>(null);
+  const [denyReason, setDenyReason] = useState('');
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const pending = requests.filter(r => r.status === 'pending');
+  const admitted = requests.filter(r => r.status === 'admitted');
+  const denied = requests.filter(r => r.status === 'denied');
+
+  const handleAdmit = async (req: SupervisionRequest) => {
+    setProcessing(req.id);
+    await new Promise(r => setTimeout(r, 700));
+    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'admitted' } : r));
+    setProcessing(null);
+    setViewingRequest(null);
+  };
+
+  const handleDeny = async () => {
+    if (!denyModal) return;
+    setProcessing(denyModal.id);
+    await new Promise(r => setTimeout(r, 700));
+    setRequests(prev => prev.map(r => r.id === denyModal.id ? { ...r, status: 'denied' } : r));
+    setProcessing(null);
+    setDenyModal(null);
+    setDenyReason('');
+    setViewingRequest(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-800">Supervision Requests</h2>
+        <div className="flex gap-2">
+          <span className="text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full">{pending.length} pending</span>
+          {admitted.length > 0 && <span className="text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">{admitted.length} admitted</span>}
+          {denied.length > 0 && <span className="text-xs font-medium bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full">{denied.length} denied</span>}
+        </div>
+      </div>
+
+      {pending.length === 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+          <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">No pending supervision requests.</p>
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-amber-50">
+            <p className="text-sm font-medium text-amber-800">Pending Review ({pending.length})</p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {pending.map((req) => (
+              <div key={req.id} className="p-5 flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-[#EEEDFB] flex items-center justify-center text-sm font-bold text-[#312DC4] shrink-0">
+                  {req.studentName.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800">{req.studentName}</p>
+                  <p className="text-xs text-gray-500">{req.regNo} · {req.program}</p>
+                  <p className="text-xs text-gray-600 mt-1">Topic interest: <span className="font-medium text-gray-700">{req.topicInterest}</span></p>
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(req.submittedAt).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setViewingRequest(req)}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium text-[#312DC4] border border-[#C5C3EC] bg-[#EEEDFB] hover:bg-[#E3E2F7]"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleAdmit(req)}
+                    disabled={processing === req.id}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" /> {processing === req.id ? '…' : 'Admit'}
+                  </button>
+                  <button
+                    onClick={() => { setDenyModal(req); setDenyReason(''); }}
+                    disabled={processing === req.id}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50"
+                  >
+                    <X className="w-3.5 h-3.5" /> Deny
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(admitted.length > 0 || denied.length > 0) && (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-sm font-medium text-gray-600">Processed Requests</p>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {[...admitted, ...denied].map((req) => (
+              <div key={req.id} className="px-5 py-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-700">{req.studentName} <span className="text-gray-400 text-xs font-normal">({req.regNo})</span></p>
+                  <p className="text-xs text-gray-400 truncate">{req.topicInterest}</p>
+                </div>
+                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full shrink-0 ${req.status === 'admitted' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                  {req.status === 'admitted' ? '✓ Admitted' : '✗ Denied'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {viewingRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-gray-800">{viewingRequest.studentName}</h3>
+                <p className="text-xs text-gray-500">{viewingRequest.regNo} · {viewingRequest.program}</p>
+              </div>
+              <button onClick={() => setViewingRequest(null)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <p className="text-xs font-medium text-gray-500 mb-1">Topic of Interest</p>
+              <p className="text-sm font-medium text-gray-800">{viewingRequest.topicInterest}</p>
+            </div>
+            <div className="mb-5">
+              <p className="text-xs font-medium text-gray-500 mb-1">Student's Message</p>
+              <p className="text-sm text-gray-700 leading-relaxed">{viewingRequest.message}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => handleAdmit(viewingRequest)} disabled={processing === viewingRequest.id}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
+                <UserCheck className="w-4 h-4" /> Admit Student
+              </button>
+              <button onClick={() => { setDenyModal(viewingRequest); setDenyReason(''); setViewingRequest(null); }}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600">
+                <X className="w-4 h-4" /> Deny
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deny modal */}
+      {denyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">Deny Request</h3>
+              <button onClick={() => setDenyModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">Denying supervision request from <span className="font-medium text-gray-800">{denyModal.studentName}</span>.</p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+              <textarea rows={3} value={denyReason} onChange={(e) => setDenyReason(e.target.value)}
+                placeholder="Provide a reason to help the student…"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleDeny} disabled={processing === denyModal.id}
+                className="flex-1 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50">
+                {processing === denyModal.id ? 'Denying…' : 'Confirm Denial'}
+              </button>
+              <button onClick={() => setDenyModal(null)} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,7 +664,6 @@ export function ProjectTopicUpload({ onNavigate: _onNavigate }: ScreenProps) {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-800">Upload Project Topics</h2>
 
-      {/* Form */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2"><Plus className="w-4 h-4 text-[#312DC4]" /> Add New Topic</h3>
 
@@ -213,7 +716,6 @@ export function ProjectTopicUpload({ onNavigate: _onNavigate }: ScreenProps) {
         </form>
       </div>
 
-      {/* Topics list */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-700 mb-4">Your Topics</h3>
         {loading ? (
@@ -353,7 +855,6 @@ export function ViewAssignedStudents({ onNavigate: _onNavigate }: ScreenProps) {
         </div>
       </div>
 
-      {/* Feedback modal */}
       {reviewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-6">
@@ -392,12 +893,24 @@ export function SupervisorWorkloadTracking({ onNavigate: _onNavigate }: ScreenPr
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [stats, setStats] = useState({ assignedStudents: 0, activeProjects: 0, pendingReviews: 0, workloadPercent: 0 });
   const [loading, setLoading] = useState(true);
+  const [editingCapacity, setEditingCapacity] = useState(false);
+  const [maxStudents, setMaxStudents] = useState(15);
+  const [tempMax, setTempMax] = useState(15);
+  const [savingCapacity, setSavingCapacity] = useState(false);
 
   useEffect(() => {
     Promise.all([lecturerApi.students(), lecturerApi.stats()])
       .then(([s, st]) => { setStudents(s); setStats(st); })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSaveCapacity = async () => {
+    setSavingCapacity(true);
+    await new Promise(r => setTimeout(r, 700));
+    setMaxStudents(tempMax);
+    setSavingCapacity(false);
+    setEditingCapacity(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -416,7 +929,28 @@ export function SupervisorWorkloadTracking({ onNavigate: _onNavigate }: ScreenPr
               style={{ width: `${stats.workloadPercent}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-2">{stats.assignedStudents} of 15 maximum student slots filled.</p>
+          <p className="text-xs text-gray-400 mt-2">{stats.assignedStudents} of {maxStudents} maximum student slots filled.</p>
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            {editingCapacity ? (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 shrink-0">Max students:</label>
+                <input type="number" min={1} max={50} value={tempMax}
+                  onChange={(e) => setTempMax(Number(e.target.value))}
+                  className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                <button onClick={handleSaveCapacity} disabled={savingCapacity}
+                  className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60">
+                  <Save className="w-3 h-3" /> {savingCapacity ? '…' : 'Save'}
+                </button>
+                <button onClick={() => { setEditingCapacity(false); setTempMax(maxStudents); }}
+                  className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+              </div>
+            ) : (
+              <button onClick={() => { setEditingCapacity(true); setTempMax(maxStudents); }}
+                className="flex items-center gap-1.5 text-xs text-[#312DC4] hover:underline">
+                <PenLine className="w-3 h-3" /> Edit maximum capacity
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -426,6 +960,7 @@ export function SupervisorWorkloadTracking({ onNavigate: _onNavigate }: ScreenPr
               { label: 'Assigned Students', value: stats.assignedStudents },
               { label: 'Active Projects',   value: stats.activeProjects },
               { label: 'Pending Reviews',   value: stats.pendingReviews },
+              { label: 'Available Slots',   value: Math.max(0, maxStudents - stats.assignedStudents) },
             ].map((row) => (
               <div key={row.label} className="flex justify-between text-sm">
                 <dt className="text-gray-500">{row.label}</dt>
@@ -477,6 +1012,15 @@ export function LecturerMessaging({ onNavigate: _onNavigate }: ScreenProps) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<'individual' | 'broadcast'>('individual');
+  const [broadcastText, setBroadcastText] = useState('');
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastSuccess, setBroadcastSuccess] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meeting, setMeeting] = useState<MeetingForm>({
+    platform: 'googlemeet', date: '', time: '', topic: '', link: '', location: '', sendTo: 'all',
+  });
+  const [schedulingMeeting, setSchedulingMeeting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
@@ -524,56 +1068,161 @@ export function LecturerMessaging({ onNavigate: _onNavigate }: ScreenProps) {
     }
   };
 
+  const sendBroadcast = async () => {
+    if (!broadcastText.trim() || !user) return;
+    setBroadcastSending(true);
+    await new Promise(r => setTimeout(r, 1000));
+    setBroadcastSending(false);
+    setBroadcastSuccess(true);
+    setBroadcastText('');
+    setTimeout(() => setBroadcastSuccess(false), 4000);
+  };
+
+  const scheduleMeeting = async () => {
+    if (!meeting.date || !meeting.time || !meeting.topic || !user) return;
+    setSchedulingMeeting(true);
+    await new Promise(r => setTimeout(r, 900));
+
+    const platformLabel = PLATFORM_LABELS[meeting.platform];
+    const dateStr = new Date(`${meeting.date}T${meeting.time}`).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    const content = `${PLATFORM_ICONS[meeting.platform]} ${platformLabel} — ${meeting.topic}\n📅 ${dateStr}${meeting.link ? `\n🔗 ${meeting.link}` : ''}${meeting.location ? `\n📍 ${meeting.location}` : ''}`;
+
+    if (activeConvId && user && meeting.sendTo !== 'all') {
+      const msg: Message = {
+        id: `meet-${Date.now()}`, conversationId: activeConvId,
+        senderId: user.id, senderName: user.name,
+        type: 'text' as any, content, sentAt: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, msg]);
+    }
+
+    setSchedulingMeeting(false);
+    setShowMeetingModal(false);
+    setMeeting({ platform: 'googlemeet', date: '', time: '', topic: '', link: '', location: '', sendTo: 'all' });
+  };
+
+  const platformUrls: Record<string, string> = {
+    googlemeet: 'https://meet.google.com/new',
+    zoom: 'https://zoom.us/start/videomeeting',
+    teams: 'https://teams.microsoft.com',
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-800">Messages</h2>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex h-[calc(100vh-220px)] min-h-[480px]">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex h-[calc(100vh-220px)] min-h-[500px]">
         {/* Sidebar */}
         <div className="w-72 border-r border-gray-200 flex flex-col shrink-0">
-          <div className="p-4 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">Student Conversations</p>
+          {/* Mode tabs */}
+          <div className="flex border-b border-gray-200 shrink-0">
+            <button
+              onClick={() => setViewMode('individual')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${viewMode === 'individual' ? 'text-[#312DC4] border-b-2 border-[#312DC4] bg-[#EEEDFB]/30' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Individual
+            </button>
+            <button
+              onClick={() => setViewMode('broadcast')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${viewMode === 'broadcast' ? 'text-[#312DC4] border-b-2 border-[#312DC4] bg-[#EEEDFB]/30' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Megaphone className="w-3.5 h-3.5" /> Broadcast
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {loadingConvs
-              ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="p-4"><Skeleton className="h-12 w-full" /></div>)
-              : conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => setActiveConvId(conv.id)}
-                  className={`w-full flex items-center gap-3 p-4 border-b border-gray-50 text-left hover:bg-gray-50 transition-colors ${activeConvId === conv.id ? 'bg-[#EEEDFB]' : ''}`}
-                >
-                  <div className="w-9 h-9 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-[#312DC4] text-xs font-bold shrink-0">
-                    {conv.participantInitials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-800 truncate">{conv.participantName}</p>
-                      {conv.unreadCount > 0 && (
-                        <span className="ml-1 w-4 h-4 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center shrink-0">{conv.unreadCount}</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{conv.participantSubtitle}</p>
-                    <p className="text-xs text-gray-400 truncate mt-0.5">{conv.lastMessage}</p>
-                  </div>
-                </button>
-              ))
-            }
-          </div>
+
+          {viewMode === 'individual' ? (
+            <>
+              <div className="p-4 border-b border-gray-100">
+                <p className="text-xs font-semibold text-gray-700">Student Conversations</p>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {loadingConvs
+                  ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="p-4"><Skeleton className="h-12 w-full" /></div>)
+                  : conversations.map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => setActiveConvId(conv.id)}
+                      className={`w-full flex items-center gap-3 p-4 border-b border-gray-50 text-left hover:bg-gray-50 transition-colors ${activeConvId === conv.id ? 'bg-[#EEEDFB]' : ''}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-[#312DC4] text-xs font-bold shrink-0">
+                        {conv.participantInitials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-800 truncate">{conv.participantName}</p>
+                          {conv.unreadCount > 0 && (
+                            <span className="ml-1 w-4 h-4 bg-[#312DC4] text-white text-xs rounded-full flex items-center justify-center shrink-0">{conv.unreadCount}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">{conv.participantSubtitle}</p>
+                        <p className="text-xs text-gray-400 truncate mt-0.5">{conv.lastMessage}</p>
+                      </div>
+                    </button>
+                  ))
+                }
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col p-4">
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Broadcast to Students</p>
+                <p className="text-xs text-gray-400">Send an announcement to all your supervised students at once.</p>
+              </div>
+              <div className="bg-[#EEEDFB] border border-[#C5C3EC] rounded-lg p-3 mb-3">
+                <p className="text-xs font-medium text-[#312DC4]">Recipients</p>
+                {loadingConvs
+                  ? <Skeleton className="h-4 w-full mt-1" />
+                  : conversations.map(c => (
+                    <p key={c.id} className="text-xs text-gray-600 mt-1">• {c.participantName}</p>
+                  ))
+                }
+              </div>
+              {broadcastSuccess && (
+                <div className="mb-3 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" /> Broadcast sent to all students.
+                </div>
+              )}
+              <textarea
+                value={broadcastText}
+                onChange={(e) => setBroadcastText(e.target.value)}
+                rows={5}
+                placeholder="Write your announcement…"
+                className="flex-1 resize-none px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] bg-gray-50"
+              />
+              <button
+                onClick={sendBroadcast}
+                disabled={!broadcastText.trim() || broadcastSending}
+                className="mt-2 flex items-center justify-center gap-2 w-full py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-50"
+              >
+                <Megaphone className="w-4 h-4" /> {broadcastSending ? 'Sending…' : 'Send to All Students'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Thread */}
         <div className="flex-1 flex flex-col">
-          {activeConv ? (
+          {viewMode === 'broadcast' ? (
+            <div className="flex-1 flex items-center justify-center flex-col gap-3 text-center px-8">
+              <Megaphone className="w-10 h-10 text-[#312DC4]/20" />
+              <p className="text-sm text-gray-400">Compose your broadcast message in the panel on the left. It will be delivered to all your supervised students simultaneously.</p>
+            </div>
+          ) : activeConv ? (
             <>
               <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
                 <div className="w-8 h-8 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-[#312DC4] text-xs font-bold shrink-0">
                   {activeConv.participantInitials}
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-800">{activeConv.participantName}</p>
                   <p className="text-xs text-gray-400">{activeConv.projectInfo}</p>
                 </div>
+                <button
+                  onClick={() => setShowMeetingModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-[#312DC4] border border-[#C5C3EC] bg-[#EEEDFB] hover:bg-[#E3E2F7] transition-colors"
+                >
+                  <Calendar className="w-3.5 h-3.5" /> Schedule Meeting
+                </button>
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
@@ -631,6 +1280,99 @@ export function LecturerMessaging({ onNavigate: _onNavigate }: ScreenProps) {
           )}
         </div>
       </div>
+
+      {/* Meeting scheduler modal */}
+      {showMeetingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold text-gray-800">Schedule a Meeting</h3>
+              <button onClick={() => setShowMeetingModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Platform */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Meeting Platform</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['googlemeet', 'zoom', 'teams', 'physical'] as const).map((p) => (
+                    <label key={p} className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors text-sm ${meeting.platform === p ? 'border-[#312DC4] bg-[#EEEDFB] text-[#312DC4]' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
+                      <input type="radio" name="platform" value={p} checked={meeting.platform === p} onChange={() => setMeeting(m => ({ ...m, platform: p }))} className="hidden" />
+                      <span className="text-base">{PLATFORM_ICONS[p]}</span>
+                      <span className="font-medium">{PLATFORM_LABELS[p]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input type="date" value={meeting.date} onChange={(e) => setMeeting(m => ({ ...m, date: e.target.value }))}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                  <input type="time" value={meeting.time} onChange={(e) => setMeeting(m => ({ ...m, time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Agenda / Topic</label>
+                <input type="text" value={meeting.topic} onChange={(e) => setMeeting(m => ({ ...m, topic: e.target.value }))}
+                  placeholder="e.g. Chapter 3 review and feedback"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+              </div>
+
+              {meeting.platform !== 'physical' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Link</label>
+                  <div className="flex gap-2">
+                    <input type="url" value={meeting.link} onChange={(e) => setMeeting(m => ({ ...m, link: e.target.value }))}
+                      placeholder={`Paste your ${PLATFORM_LABELS[meeting.platform]} link…`}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                    <a href={platformUrls[meeting.platform]} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-3 py-2 rounded-md text-xs font-medium text-[#312DC4] border border-[#C5C3EC] bg-[#EEEDFB] hover:bg-[#E3E2F7] whitespace-nowrap">
+                      <ExternalLink className="w-3.5 h-3.5" /> Create link
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input type="text" value={meeting.location} onChange={(e) => setMeeting(m => ({ ...m, location: e.target.value }))}
+                    placeholder="e.g. Room 204, Engineering Block B"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Send to</label>
+                <select value={meeting.sendTo} onChange={(e) => setMeeting(m => ({ ...m, sendTo: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+                  <option value="all">All my students (broadcast)</option>
+                  {conversations.map(c => <option key={c.id} value={c.id}>{c.participantName}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={scheduleMeeting}
+                disabled={schedulingMeeting || !meeting.date || !meeting.time || !meeting.topic}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-50"
+              >
+                <Calendar className="w-4 h-4" /> {schedulingMeeting ? 'Scheduling…' : 'Send Meeting Invite'}
+              </button>
+              <button onClick={() => setShowMeetingModal(false)} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

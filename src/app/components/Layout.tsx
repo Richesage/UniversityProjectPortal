@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Bell, Search, LogOut, User, BookOpen,
   LayoutDashboard, FileText, List, Users, BarChart,
-  ClipboardList, MessageSquare,
+  ClipboardList, MessageSquare, UserCheck, Star,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
@@ -22,25 +22,29 @@ export function Layout({ role, currentScreen, onNavigate, onLogout, children }: 
     switch (role) {
       case 'student':
         return [
-          { id: 'dashboard',       label: 'Dashboard',        icon: LayoutDashboard },
-          { id: 'topic-selection', label: 'Project Topics',   icon: List },
-          { id: 'submission',      label: 'Submissions',      icon: FileText },
-          { id: 'progress',        label: 'Progress Tracking', icon: BarChart },
-          { id: 'messages',        label: 'Messages',         icon: MessageSquare },
+          { id: 'dashboard',        label: 'Dashboard',          icon: LayoutDashboard },
+          { id: 'find-supervisor',  label: 'Find Supervisor',    icon: Star },
+          { id: 'topic-selection',  label: 'Project Topics',     icon: List },
+          { id: 'submission',       label: 'Submissions',        icon: FileText },
+          { id: 'progress',         label: 'Progress Tracking',  icon: BarChart },
+          { id: 'messages',         label: 'Messages',           icon: MessageSquare },
         ];
       case 'lecturer':
         return [
-          { id: 'dashboard',     label: 'Dashboard',         icon: LayoutDashboard },
-          { id: 'topic-upload',  label: 'Upload Topics',     icon: FileText },
-          { id: 'view-students', label: 'My Students',       icon: Users },
-          { id: 'workload',      label: 'Workload Tracking', icon: BarChart },
-          { id: 'messages',      label: 'Messages',          icon: MessageSquare },
+          { id: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
+          { id: 'my-profile',       label: 'My Profile',             icon: User },
+          { id: 'student-requests', label: 'Supervision Requests',   icon: UserCheck },
+          { id: 'topic-upload',     label: 'Upload Topics',          icon: FileText },
+          { id: 'view-students',    label: 'My Students',            icon: Users },
+          { id: 'workload',         label: 'Workload Tracking',      icon: BarChart },
+          { id: 'messages',         label: 'Messages',               icon: MessageSquare },
         ];
       case 'admin':
         return [
-          { id: 'dashboard',             label: 'Dashboard',          icon: LayoutDashboard },
+          { id: 'dashboard',             label: 'Dashboard',            icon: LayoutDashboard },
+          { id: 'topic-approval',        label: 'Topic Approval',       icon: FileText },
           { id: 'supervisor-allocation', label: 'Allocate Supervisors', icon: Users },
-          { id: 'report-generation',     label: 'Reports',            icon: ClipboardList },
+          { id: 'report-generation',     label: 'Reports',              icon: ClipboardList },
         ];
       default:
         return [];

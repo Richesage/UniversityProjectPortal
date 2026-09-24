@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText, BarChart2, MessageSquare, Upload, CheckCircle,
   Clock, AlertCircle, Send, Paperclip, ImageIcon, Video,
-  X, ChevronRight, Star,
+  X, ChevronRight, Star, Search, UserCheck, Award,
+  BookOpen, Shield, AlertTriangle, ExternalLink, Filter,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { projectApi, topicsApi, submissionsApi, messagesApi } from '../../lib/api';
@@ -10,12 +11,10 @@ import type { Project, Topic, Submission, Conversation, Message, TopicFilters } 
 
 interface ScreenProps { onNavigate: (screen: string) => void; }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`bg-gray-200 animate-pulse rounded ${className}`} />;
 }
 
-// ─── ChatBubble ───────────────────────────────────────────────────────────────
 function ChatBubble({ msg, isMine }: { msg: Message; isMine: boolean }) {
   const time = new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
@@ -46,6 +45,84 @@ function ChatBubble({ msg, isMine }: { msg: Message; isMine: boolean }) {
   );
 }
 
+// ─── Mock supervisor data ─────────────────────────────────────────────────────
+interface SupervisorProfile {
+  id: string;
+  name: string;
+  title: string;
+  department: string;
+  specializations: string[];
+  bio: string;
+  openSlots: number;
+  maxStudents: number;
+  awards: string[];
+  certifications: string[];
+  rating: number;
+}
+
+const MOCK_SUPERVISORS: SupervisorProfile[] = [
+  {
+    id: 'lec1', name: 'Sarah Johnson', title: 'Dr.', department: 'Computer Science',
+    specializations: ['Artificial Intelligence', 'Machine Learning', 'Computer Vision'],
+    bio: 'A leading researcher in AI and machine learning with over 15 years of experience. Published 40+ papers in top-tier venues and has led multiple national research projects on intelligent systems.',
+    openSlots: 2, maxStudents: 8,
+    awards: ['Best Research Paper — IEEE 2024', 'Faculty Excellence Award 2023'],
+    certifications: ['PhD Computer Science — MIT', 'Google Professional ML Engineer'],
+    rating: 4.8,
+  },
+  {
+    id: 'lec2', name: 'Michael Chen', title: 'Dr.', department: 'Software Engineering',
+    specializations: ['Blockchain', 'Distributed Systems', 'Cybersecurity'],
+    bio: 'Specialises in blockchain technology and distributed systems security. Has extensive industry experience at leading tech firms before transitioning to academia.',
+    openSlots: 3, maxStudents: 6,
+    awards: ['Faculty Excellence Award 2023'],
+    certifications: ['PhD Information Security — Stanford', 'Certified Ethical Hacker (CEH)'],
+    rating: 4.6,
+  },
+  {
+    id: 'lec3', name: 'Amina Osei', title: 'Prof.', department: 'Electrical Engineering',
+    specializations: ['Internet of Things', 'Embedded Systems', 'Smart Grid'],
+    bio: 'Professor with research focus on IoT and smart infrastructure. Leads the Smart Systems Lab and has secured $2M+ in research funding from international bodies.',
+    openSlots: 1, maxStudents: 10,
+    awards: ['African Innovator of the Year 2022', 'STEM Champion Award 2024'],
+    certifications: ['PhD Electrical Engineering — Cambridge'],
+    rating: 4.9,
+  },
+  {
+    id: 'lec4', name: 'Kwesi Ampah', title: 'Dr.', department: 'Computer Science',
+    specializations: ['Data Science', 'Big Data Analytics', 'Database Systems'],
+    bio: 'Focuses on scalable data analytics solutions for real-world industry problems. Collaborates with major banks and telecoms on data-driven research initiatives.',
+    openSlots: 4, maxStudents: 8,
+    awards: ['Teaching Excellence Award 2025'],
+    certifications: ['PhD Data Science — UCL', 'AWS Certified Data Analytics'],
+    rating: 4.4,
+  },
+  {
+    id: 'lec5', name: 'Abena Frimpong', title: 'Dr.', department: 'Information Technology',
+    specializations: ['Mobile Computing', 'Web Development', 'Human-Computer Interaction'],
+    bio: 'Passionate about building user-centred digital systems that create social impact. Her work bridges technology and community development across West Africa.',
+    openSlots: 0, maxStudents: 5,
+    awards: ['HCI Research Award 2024'],
+    certifications: ['PhD HCI — University of Edinburgh'],
+    rating: 4.7,
+  },
+];
+
+// ─── Mock plagiarism check ─────────────────────────────────────────────────────
+async function checkPlagiarism(fileName: string): Promise<{ score: number; verdict: 'clear' | 'warning' | 'flagged'; sources: string[] }> {
+  await new Promise(r => setTimeout(r, 2800));
+  const seed = Array.from(fileName).reduce((a, c) => a + c.charCodeAt(0), 0);
+  const score = ((seed * 7 + 13) % 35);
+  return {
+    score,
+    verdict: score < 15 ? 'clear' : score < 25 ? 'warning' : 'flagged',
+    sources: score > 8 ? [
+      'doi.org/10.1016/j.techreport.2024.01.023',
+      'scholar.google.com/citations?q=related-research-2023',
+    ] : [],
+  };
+}
+
 // ─── StudentDashboard ─────────────────────────────────────────────────────────
 export function StudentDashboard({ onNavigate }: ScreenProps) {
   const { user } = useAuth();
@@ -65,9 +142,9 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Overall Progress', value: loading ? '—' : `${project?.overallProgress ?? 0}%`, icon: BarChart2, color: 'text-[#312DC4]', bg: 'bg-[#EEEDFB]' },
-          { label: 'Submissions',      value: '2', icon: FileText,     color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Messages',         value: '2', icon: MessageSquare, color: 'text-amber-600',  bg: 'bg-amber-50' },
+          { label: 'Overall Progress', value: loading ? '—' : `${project?.overallProgress ?? 0}%`, icon: BarChart2,     color: 'text-[#312DC4]',   bg: 'bg-[#EEEDFB]' },
+          { label: 'Submissions',      value: '2',                                                   icon: FileText,     color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Messages',         value: '2',                                                   icon: MessageSquare, color: 'text-amber-600',  bg: 'bg-amber-50' },
         ].map((card) => (
           <div key={card.label} className="bg-white rounded-lg border border-gray-200 p-5 flex items-center gap-4">
             <div className={`w-11 h-11 ${card.bg} rounded-lg flex items-center justify-center shrink-0`}>
@@ -111,8 +188,8 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
         ) : (
           <div className="text-center py-6">
             <p className="text-gray-500 text-sm">No active project yet.</p>
-            <button onClick={() => onNavigate('topic-selection')} className="mt-3 text-sm text-[#312DC4] hover:underline">
-              Browse available topics
+            <button onClick={() => onNavigate('find-supervisor')} className="mt-3 text-sm text-[#312DC4] hover:underline">
+              Find a supervisor to get started
             </button>
           </div>
         )}
@@ -122,10 +199,11 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
         <h3 className="font-semibold text-gray-700 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { label: 'Submit Chapter',   screen: 'submission',      icon: Upload },
-            { label: 'View Progress',    screen: 'progress',        icon: BarChart2 },
-            { label: 'Browse Topics',    screen: 'topic-selection', icon: Star },
-            { label: 'Messages',         screen: 'messages',        icon: MessageSquare },
+            { label: 'Find a Supervisor', screen: 'find-supervisor',  icon: Search },
+            { label: 'Browse Topics',     screen: 'topic-selection',  icon: Star },
+            { label: 'Submit Chapter',    screen: 'submission',       icon: Upload },
+            { label: 'View Progress',     screen: 'progress',         icon: BarChart2 },
+            { label: 'Messages',          screen: 'messages',         icon: MessageSquare },
           ].map((a) => (
             <button
               key={a.screen}
@@ -139,6 +217,293 @@ export function StudentDashboard({ onNavigate }: ScreenProps) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── FindSupervisor ───────────────────────────────────────────────────────────
+export function FindSupervisor({ onNavigate: _onNavigate }: ScreenProps) {
+  const [search, setSearch] = useState('');
+  const [filterArea, setFilterArea] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [selectedSup, setSelectedSup] = useState<SupervisorProfile | null>(null);
+  const [requestModal, setRequestModal] = useState<SupervisorProfile | null>(null);
+  const [requestNote, setRequestNote] = useState('');
+  const [requestTopic, setRequestTopic] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [sentRequests, setSentRequests] = useState<string[]>([]);
+
+  const allAreas = [...new Set(MOCK_SUPERVISORS.flatMap(s => s.specializations))].sort();
+  const allDepts = [...new Set(MOCK_SUPERVISORS.map(s => s.department))].sort();
+
+  const filtered = MOCK_SUPERVISORS.filter(s => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || s.name.toLowerCase().includes(q) || s.specializations.some(sp => sp.toLowerCase().includes(q)) || s.department.toLowerCase().includes(q);
+    const matchArea = !filterArea || s.specializations.includes(filterArea);
+    const matchDept = !filterDept || s.department === filterDept;
+    return matchSearch && matchArea && matchDept;
+  });
+
+  const handleSendRequest = async () => {
+    if (!requestModal || !requestTopic.trim()) return;
+    setSubmitting(true);
+    await new Promise(r => setTimeout(r, 1000));
+    setSentRequests(prev => [...prev, requestModal.id]);
+    setSubmitting(false);
+    setRequestModal(null);
+    setRequestNote('');
+    setRequestTopic('');
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+    ));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800">Find a Supervisor</h2>
+        <p className="text-sm text-gray-500 mt-0.5">Browse available supervisors and send a supervision request.</p>
+      </div>
+
+      {sentRequests.length > 0 && (
+        <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-emerald-800">Request{sentRequests.length !== 1 ? 's' : ''} sent!</p>
+            <p className="text-sm text-emerald-700 mt-0.5">Your supervisor request has been submitted. You will be notified once the lecturer reviews it.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Search & filters */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name or specialization…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+            />
+          </div>
+          <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+            <option value="">All Specializations</option>
+            {allAreas.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] appearance-none">
+            <option value="">All Departments</option>
+            {allDepts.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Supervisor grid */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+          <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">No supervisors match your search.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filtered.map((sup) => {
+            const requested = sentRequests.includes(sup.id);
+            return (
+              <div key={sup.id} className="bg-white rounded-lg border border-gray-200 p-5">
+                <div className="flex items-start gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-sm font-bold text-[#312DC4] shrink-0">
+                    {sup.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs text-[#312DC4] font-medium bg-[#EEEDFB] px-1.5 py-0.5 rounded">{sup.title}</span>
+                      <p className="text-sm font-semibold text-gray-800">{sup.name}</p>
+                    </div>
+                    <p className="text-xs text-gray-500">{sup.department}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {renderStars(sup.rating)}
+                      <span className="text-xs text-gray-500 ml-0.5">{sup.rating}</span>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${sup.openSlots > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'}`}>
+                    {sup.openSlots > 0 ? `${sup.openSlots} slot${sup.openSlots !== 1 ? 's' : ''}` : 'Full'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-600 leading-relaxed mb-3 line-clamp-2">{sup.bio}</p>
+
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {sup.specializations.map((s) => (
+                    <span key={s} className="text-xs font-medium text-[#312DC4] bg-[#EEEDFB] border border-[#C5C3EC] rounded-full px-2 py-0.5">{s}</span>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedSup(sup)}
+                    className="flex-1 py-2 rounded-md text-sm font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    View Profile
+                  </button>
+                  {requested ? (
+                    <div className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200">
+                      <CheckCircle className="w-4 h-4" /> Requested
+                    </div>
+                  ) : (
+                    <button
+                      disabled={sup.openSlots === 0}
+                      onClick={() => { setRequestModal(sup); setRequestNote(''); setRequestTopic(''); }}
+                      className="flex-1 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Request Supervision
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Full profile modal */}
+      {selectedSup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-xl overflow-y-auto max-h-full p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-full bg-[#EEEDFB] border border-[#C5C3EC] flex items-center justify-center text-lg font-bold text-[#312DC4] shrink-0">
+                  {selectedSup.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-[#312DC4] font-medium bg-[#EEEDFB] px-1.5 py-0.5 rounded">{selectedSup.title}</span>
+                    <h3 className="text-lg font-bold text-gray-800">{selectedSup.name}</h3>
+                  </div>
+                  <p className="text-sm text-gray-500">{selectedSup.department}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {renderStars(selectedSup.rating)}
+                    <span className="text-xs text-gray-500 ml-0.5">{selectedSup.rating} / 5</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setSelectedSup(null)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Professional Bio</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedSup.bio}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Areas of Specialization</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedSup.specializations.map(s => (
+                    <span key={s} className="text-sm font-medium text-[#312DC4] bg-[#EEEDFB] border border-[#C5C3EC] rounded-full px-3 py-1">{s}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Awards & Recognition</p>
+                <ul className="space-y-1.5">
+                  {selectedSup.awards.map((a, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0 mt-0.5" /> {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Qualifications</p>
+                <ul className="space-y-1.5">
+                  {selectedSup.certifications.map((c, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" /> {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Supervision capacity: <span className="font-semibold text-gray-800">{selectedSup.openSlots} of {selectedSup.maxStudents} slots available</span></p>
+                </div>
+                {sentRequests.includes(selectedSup.id) ? (
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-md">
+                    <CheckCircle className="w-4 h-4" /> Requested
+                  </span>
+                ) : (
+                  <button
+                    disabled={selectedSup.openSlots === 0}
+                    onClick={() => { setRequestModal(selectedSup); setSelectedSup(null); setRequestNote(''); setRequestTopic(''); }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <UserCheck className="w-4 h-4" /> Request Supervision
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request modal */}
+      {requestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">Request Supervision</h3>
+              <button onClick={() => setRequestModal(null)}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              You are requesting supervision from <span className="font-medium text-gray-800">{requestModal.title} {requestModal.name}</span>.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your topic of interest <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={requestTopic}
+                  onChange={(e) => setRequestTopic(e.target.value)}
+                  placeholder="Briefly describe your project idea…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message to supervisor <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  rows={4}
+                  value={requestNote}
+                  onChange={(e) => setRequestNote(e.target.value)}
+                  placeholder="Introduce yourself and explain why you are interested in working with this supervisor…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={handleSendRequest}
+                disabled={submitting || !requestTopic.trim()}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-50"
+              >
+                <UserCheck className="w-4 h-4" /> {submitting ? 'Sending…' : 'Send Request'}
+              </button>
+              <button onClick={() => setRequestModal(null)} className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -239,7 +604,7 @@ export function ProjectTopicSelection({ onNavigate: _onNavigate }: ScreenProps) 
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Topic Title</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Lecturer</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Area of Specialization</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Specialization</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Slots</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                 <th className="px-4 py-3" />
@@ -300,25 +665,15 @@ export function ProjectTopicSelection({ onNavigate: _onNavigate }: ScreenProps) 
         <form onSubmit={handlePropose} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Proposed Title</label>
-            <input
-              type="text"
-              required
-              value={proposalTitle}
-              onChange={(e) => setProposalTitle(e.target.value)}
+            <input type="text" required value={proposalTitle} onChange={(e) => setProposalTitle(e.target.value)}
               placeholder="Enter your proposed topic title"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
-            />
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Brief Description</label>
-            <textarea
-              required
-              value={proposalDesc}
-              onChange={(e) => setProposalDesc(e.target.value)}
-              rows={3}
-              placeholder="Describe your project idea…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none"
-            />
+            <textarea required value={proposalDesc} onChange={(e) => setProposalDesc(e.target.value)}
+              rows={3} placeholder="Describe your project idea…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4] resize-none" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Attach Proposal (optional)</label>
@@ -336,11 +691,8 @@ export function ProjectTopicSelection({ onNavigate: _onNavigate }: ScreenProps) 
               )}
             </div>
           </div>
-          <button
-            type="submit"
-            disabled={submittingProposal}
-            className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60"
-          >
+          <button type="submit" disabled={submittingProposal}
+            className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60">
             {submittingProposal ? 'Submitting…' : 'Submit Proposal'}
           </button>
         </form>
@@ -359,13 +711,38 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Plagiarism check state — in a real system, the threshold would come from the lecturer's settings API
+  const plagiarismRequired = true;
+  const plagiarismThreshold = 20;
+  const [plagCheck, setPlagCheck] = useState<{
+    status: 'idle' | 'checking' | 'done';
+    score?: number;
+    verdict?: 'clear' | 'warning' | 'flagged';
+    sources?: string[];
+  }>({ status: 'idle' });
+
   useEffect(() => {
     submissionsApi.list().then(setSubmissions).finally(() => setLoading(false));
   }, []);
 
+  const handleFileChange = (f: File | null) => {
+    setFile(f);
+    setPlagCheck({ status: 'idle' });
+  };
+
+  const handleRunPlagiarismCheck = async () => {
+    if (!file) return;
+    setPlagCheck({ status: 'checking' });
+    const result = await checkPlagiarism(file.name);
+    setPlagCheck({ status: 'done', ...result });
+  };
+
+  const canSubmit = !plagiarismRequired
+    || (plagCheck.status === 'done' && (plagCheck.verdict === 'clear' || (plagCheck.verdict === 'warning' && plagCheck.score! < plagiarismThreshold)));
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !canSubmit) return;
     setUploading(true);
     setUploadSuccess(false);
     try {
@@ -373,6 +750,7 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
       setSubmissions(prev => [newSub, ...prev]);
       setFile(null);
       setChapterLabel('');
+      setPlagCheck({ status: 'idle' });
       setUploadSuccess(true);
     } finally {
       setUploading(false);
@@ -386,12 +764,28 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
     rejected:       { label: 'Rejected',         cls: 'bg-red-50 text-red-700',         icon: AlertCircle },
   };
 
+  const plagVerdictConfig = {
+    clear:   { label: 'Clear', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle, bar: 'bg-emerald-500' },
+    warning: { label: 'Similarity Detected', cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: AlertTriangle, bar: 'bg-amber-500' },
+    flagged: { label: 'High Similarity — Blocked', cls: 'bg-red-50 text-red-700 border-red-200', icon: AlertCircle, bar: 'bg-red-500' },
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-800">Submissions & Feedback</h2>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="font-semibold text-gray-700 mb-4">Upload New Submission</h3>
+
+        {plagiarismRequired && (
+          <div className="mb-4 flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+            <Shield className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-800">Plagiarism check required</p>
+              <p className="text-xs text-blue-600 mt-0.5">Your supervisor requires all submissions to pass a plagiarism check (max {plagiarismThreshold}% similarity) before they are accepted.</p>
+            </div>
+          </div>
+        )}
 
         {uploadSuccess && (
           <div className="mb-4 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
@@ -402,19 +796,14 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Chapter / Document Label</label>
-            <input
-              type="text"
-              required
-              value={chapterLabel}
-              onChange={(e) => setChapterLabel(e.target.value)}
+            <input type="text" required value={chapterLabel} onChange={(e) => setChapterLabel(e.target.value)}
               placeholder="e.g. Chapter 3: Methodology"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]"
-            />
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#312DC4]" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Document File</label>
-            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)} />
             <div
               onClick={() => fileRef.current?.click()}
               className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-[#C5C3EC] hover:bg-[#EEEDFB]/30 transition-colors"
@@ -423,7 +812,7 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
                   <FileText className="w-5 h-5 text-[#312DC4]" />
                   <span>{file.name}</span>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); handleFileChange(null); }}>
                     <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
                   </button>
                 </div>
@@ -437,12 +826,91 @@ export function SubmissionAndFeedback({ onNavigate: _onNavigate }: ScreenProps) 
             </div>
           </div>
 
+          {/* Plagiarism check section */}
+          {plagiarismRequired && file && (
+            <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#312DC4]" />
+                  <p className="text-sm font-medium text-gray-700">Plagiarism Check</p>
+                </div>
+                {plagCheck.status !== 'done' && (
+                  <button
+                    type="button"
+                    onClick={handleRunPlagiarismCheck}
+                    disabled={plagCheck.status === 'checking'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-60"
+                  >
+                    {plagCheck.status === 'checking' ? (
+                      <><span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Checking…</>
+                    ) : 'Run Check'}
+                  </button>
+                )}
+              </div>
+
+              {plagCheck.status === 'checking' && (
+                <div className="space-y-2">
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div className="h-2 bg-[#312DC4] rounded-full animate-pulse w-2/3" />
+                  </div>
+                  <p className="text-xs text-gray-500">Analysing document against known sources…</p>
+                </div>
+              )}
+
+              {plagCheck.status === 'done' && plagCheck.verdict && (
+                <div className="space-y-2">
+                  <div className={`flex items-start gap-3 border rounded-lg px-3 py-2.5 ${plagVerdictConfig[plagCheck.verdict].cls}`}>
+                    {React.createElement(plagVerdictConfig[plagCheck.verdict].icon, { className: 'w-4 h-4 shrink-0 mt-0.5' })}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{plagVerdictConfig[plagCheck.verdict].label}</p>
+                      <p className="text-xs opacity-80 mt-0.5">Similarity score: {plagCheck.score}% (threshold: {plagiarismThreshold}%)</p>
+                    </div>
+                    <span className="text-lg font-bold tabular-nums">{plagCheck.score}%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${plagVerdictConfig[plagCheck.verdict].bar}`}
+                        style={{ width: `${Math.min(plagCheck.score!, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500 w-8 text-right">{plagiarismThreshold}%</span>
+                    <div className="w-0.5 h-3 bg-gray-300 rounded" />
+                  </div>
+                  {plagCheck.sources && plagCheck.sources.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium mb-1">Matched sources:</p>
+                      <ul className="space-y-1">
+                        {plagCheck.sources.map((s, i) => (
+                          <li key={i} className="text-xs text-gray-600 flex items-center gap-1.5">
+                            <ExternalLink className="w-3 h-3 text-gray-400" /> {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {plagCheck.verdict === 'flagged' && (
+                    <p className="text-xs text-red-600 font-medium">This document cannot be submitted. Please revise it to reduce similarity below {plagiarismThreshold}%.</p>
+                  )}
+                  {plagCheck.verdict !== 'flagged' && (
+                    <button type="button" onClick={handleRunPlagiarismCheck}
+                      className="text-xs text-[#312DC4] hover:underline">Re-check with updated file</button>
+                  )}
+                </div>
+              )}
+
+              {plagCheck.status === 'idle' && (
+                <p className="text-xs text-gray-400">Run the plagiarism check before submitting. Submissions with high similarity will be rejected.</p>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={!file || uploading}
+            disabled={!file || uploading || (plagiarismRequired && !canSubmit)}
             className="px-5 py-2 rounded-md text-sm font-medium text-white bg-[#312DC4] hover:bg-[#2724b0] disabled:opacity-50"
           >
-            {uploading ? 'Uploading…' : 'Submit for Review'}
+            {uploading ? 'Uploading…' : plagiarismRequired && plagCheck.status !== 'done' ? 'Run Plagiarism Check First' : 'Submit for Review'}
           </button>
         </form>
       </div>
